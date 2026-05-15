@@ -16,6 +16,7 @@ import { getCourseById } from "@/lib/data/courses";
 import { WorkoutStore } from "@/lib/store/workout-store";
 import { MotionData, WorkoutRecord } from "@/lib/types";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useExerciseSpeech } from "@/hooks/use-exercise-speech";
 
 // Gyroscope (only on native)
 let Gyroscope: any = null;
@@ -23,7 +24,6 @@ if (Platform.OS !== "web") {
   try { Gyroscope = require("expo-sensors").Gyroscope; } catch {}
 }
 
-const { width: SCREEN_W } = Dimensions.get("window");
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const MOTION_ICONS: Record<string, string> = {
@@ -42,7 +42,6 @@ const MOTION_GUIDE: Record<string, string> = {
   static:       "保持静止，均匀呼吸",
 };
 
-/** 最短有效锻炼时长（秒） */
 const MIN_VALID_SECONDS = 30;
 
 export default function ExerciseGuideScreen() {
@@ -59,18 +58,21 @@ export default function ExerciseGuideScreen() {
   const [isStarted, setIsStarted] = useState(false);
 
   // ── 真实秒表 ────────────────────────────────────────────────────────────────
-  // 记录"开始按下"的时刻，暂停时累计已用时间
-  const wallStartRef   = useRef<number>(0);   // Date.now() at last resume
-  const accumulatedRef = useRef<number>(0);   // ms accumulated before current segment
-  const [elapsedSec, setElapsedSec]   = useState(0); // display only
+  const wallStartRef   = useRef<number>(0);
+  const accumulatedRef = useRef<number>(0);
+  const [elapsedSec, setElapsedSec] = useState(0);
 
-  // ── 运动次数（每完成一个动作步骤 +1）────────────────────────────────────────
+  // ── 运动次数 ─────────────────────────────────────────────────────────────────
   const repCountRef = useRef<number>(0);
 
   // ── 陀螺仪 ──────────────────────────────────────────────────────────────────
   const [liveAngles, setLiveAngles] = useState({ pitch: 0, yaw: 0, roll: 0 });
   const [airpodsConnected, setAirpodsConnected] = useState(false);
   const gyroAccum = useRef({ pitch: 0, yaw: 0, roll: 0, maxPitch: 0, maxYaw: 0, maxRoll: 0 });
+
+  // ── 语音 & 音效 ──────────────────────────────────────────────────────────────
+  const { speakExercise, speakStart, speakComplete, speakPause, tickBeep, resetBeep, stopSpeech } =
+    useExerciseSpeech(true);
 
   // ── 倒计时圆环 ───────────────────────────────────────────────────────────────
   const progress = useSharedValue(1);
@@ -91,19 +93,15 @@ export default function ExerciseGuideScreen() {
       const pitchDelta = data.x * dt * (180 / Math.PI);
       const yawDelta   = data.z * dt * (180 / Math.PI);
       const rollDelta  = data.y * dt * (180 / Math.PI);
-
       gyroAccum.current.pitch += pitchDelta;
       gyroAccum.current.yaw   += yawDelta;
       gyroAccum.current.roll  += rollDelta;
-
       const absPitch = Math.abs(gyroAccum.current.pitch);
       const absYaw   = Math.abs(gyroAccum.current.yaw);
       const absRoll  = Math.abs(gyroAccum.current.roll);
-
       gyroAccum.current.maxPitch = Math.max(gyroAccum.current.maxPitch, absPitch);
       gyroAccum.current.maxYaw   = Math.max(gyroAccum.current.maxYaw, absYaw);
       gyroAccum.current.maxRoll  = Math.max(gyroAccum.current.maxRoll, absRoll);
-
       setLiveAngles({ pitch: pitchDelta, yaw: yawDelta, roll: rollDelta });
     });
     return () => sub.remove();
@@ -114,12 +112,23 @@ export default function ExerciseGuideScreen() {
     if (!currentExercise) return;
     setTimeLeft(currentExercise.durationSeconds);
     progress.value = 1;
+    resetBeep();
   }, [stepIdx, currentExercise]);
+
+  // ── 新步骤开始时语音播报（已开始锻炼才播） ──────────────────────────────────
+  useEffect(() => {
+    if (!isStarted || !currentExercise) return;
+    speakExercise(
+      currentExercise.name,
+      MOTION_GUIDE[currentExercise.motionType] ?? "",
+      currentExercise.description,
+    );
+  }, [stepIdx, isStarted]);
 
   // ── 倒计时 ticker ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isStarted || isPaused || !currentExercise) return;
-    if (timeLeft <= 0) return; // handleNextStep 由下面的 effect 触发
+    if (timeLeft <= 0) return;
 
     progress.value = withTiming(0, {
       duration: timeLeft * 1000,
@@ -142,7 +151,13 @@ export default function ExerciseGuideScreen() {
     }
   }, [timeLeft]);
 
-  // ── 真实秒表 ticker（每秒刷新显示） ─────────────────────────────────────────
+  // ── 最后3秒 beep ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isStarted || isPaused) return;
+    tickBeep(timeLeft);
+  }, [timeLeft, isStarted, isPaused]);
+
+  // ── 真实秒表 ticker ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isStarted || isPaused) return;
     const interval = setInterval(() => {
@@ -159,26 +174,37 @@ export default function ExerciseGuideScreen() {
     repCountRef.current = 0;
     setIsStarted(true);
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // 播报开始提示 + 第一个动作
+    speakStart(course?.title ?? "");
+    if (currentExercise) {
+      setTimeout(() => {
+        speakExercise(
+          currentExercise.name,
+          MOTION_GUIDE[currentExercise.motionType] ?? "",
+          currentExercise.description,
+        );
+      }, 1800);
+    }
   };
 
   // ── 暂停 / 继续 ──────────────────────────────────────────────────────────────
   const handlePause = () => {
-    if (!isPaused) {
-      // 暂停：累计已用时间
+    const nowPausing = !isPaused;
+    if (nowPausing) {
       accumulatedRef.current += Date.now() - wallStartRef.current;
       progress.value = withTiming(progress.value, { duration: 0 });
+      stopSpeech();
     } else {
-      // 继续：重置 wall start
       wallStartRef.current = Date.now();
     }
-    setIsPaused((p) => !p);
+    setIsPaused(nowPausing);
+    speakPause(nowPausing);
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
   // ── 下一步 ───────────────────────────────────────────────────────────────────
   const handleNextStep = useCallback(() => {
     if (!course) return;
-    // 每完成一个步骤，运动次数 +1
     repCountRef.current = stepIdx + 1;
 
     if (stepIdx >= course.exercises.length - 1) {
@@ -204,14 +230,13 @@ export default function ExerciseGuideScreen() {
   const finishWorkout = async (completedSteps: number) => {
     if (!course) return;
 
-    // 计算真实锻炼时长（秒）
     const totalMs = isPaused
       ? accumulatedRef.current
       : accumulatedRef.current + (Date.now() - wallStartRef.current);
     const realDurationSeconds = Math.floor(totalMs / 1000);
 
-    // ── 不足 30 秒：不保存，跳转提示页 ─────────────────────────────────────
     if (realDurationSeconds < MIN_VALID_SECONDS) {
+      stopSpeech();
       router.replace({
         pathname: "/workout-too-short",
         params: {
@@ -223,7 +248,8 @@ export default function ExerciseGuideScreen() {
       return;
     }
 
-    // ── 正常完成：保存记录 ───────────────────────────────────────────────────
+    speakComplete();
+
     const startTime = new Date(Date.now() - totalMs);
     const endTime   = new Date();
     const g = gyroAccum.current;
@@ -287,7 +313,7 @@ export default function ExerciseGuideScreen() {
       {/* ── Nav ── */}
       <View style={[styles.navBar, { borderBottomColor: colors.border }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => { stopSpeech(); router.back(); }}
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
         >
           <IconSymbol name="xmark" size={20} color={colors.muted} />
@@ -369,7 +395,7 @@ export default function ExerciseGuideScreen() {
             />
             <AnimatedCircle
               cx={65} cy={65} r={RING_R}
-              stroke={colors.primary}
+              stroke={timeLeft <= 3 && isStarted ? "#FF3B30" : colors.primary}
               strokeWidth={8}
               fill="none"
               strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
@@ -380,9 +406,22 @@ export default function ExerciseGuideScreen() {
             />
           </Svg>
           <View style={styles.countdownInner}>
-            <Text style={[styles.countdownNum, { color: colors.foreground }]}>{timeLeft}</Text>
+            <Text style={[
+              styles.countdownNum,
+              { color: timeLeft <= 3 && isStarted ? "#FF3B30" : colors.foreground },
+            ]}>
+              {timeLeft}
+            </Text>
             <Text style={[styles.countdownLabel, { color: colors.muted }]}>秒</Text>
           </View>
+        </View>
+
+        {/* 语音提示说明 */}
+        <View style={[styles.voiceHint, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={styles.voiceHintIcon}>🔊</Text>
+          <Text style={[styles.voiceHintText, { color: colors.muted }]}>
+            {isStarted ? "女声播报已开启 · 最后3秒有提示音" : "开始后将自动语音播报动作指引"}
+          </Text>
         </View>
       </View>
 
@@ -503,7 +542,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    gap: 8,
+    gap: 6,
   },
   motionIconContainer: {
     width: 80, height: 80, borderRadius: 40,
@@ -517,7 +556,7 @@ const styles = StyleSheet.create({
   countdownContainer: {
     width: 130, height: 130,
     alignItems: "center", justifyContent: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
   countdownInner: {
     position: "absolute",
@@ -525,6 +564,18 @@ const styles = StyleSheet.create({
   },
   countdownNum: { fontSize: 36, fontWeight: "800" },
   countdownLabel: { fontSize: 12, marginTop: -4 },
+  voiceHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  voiceHintIcon: { fontSize: 13 },
+  voiceHintText: { fontSize: 11 },
   gyroPanel: {
     marginHorizontal: 16,
     marginBottom: 8,

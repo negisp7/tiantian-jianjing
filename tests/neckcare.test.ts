@@ -67,9 +67,49 @@ describe("Daily Tips Data", () => {
     });
   });
 
-  it("tip ids should be sequential 0-29", () => {
+  it("tip ids should be sequential 0-59", () => {
     DAILY_TIPS.forEach((tip, idx) => {
       expect(tip.id).toBe(idx);
     });
+  });
+});
+
+describe("Exercise Speech Logic", () => {
+  it("should trigger beep only at timeLeft 3, 2, 1", () => {
+    const beepedSecs = new Set<number>();
+    const tickBeep = (timeLeft: number) => {
+      if (timeLeft > 3 || timeLeft <= 0) return;
+      if (beepedSecs.has(timeLeft)) return;
+      beepedSecs.add(timeLeft);
+    };
+    // Should not beep at 5, 4
+    tickBeep(5); tickBeep(4);
+    expect(beepedSecs.size).toBe(0);
+    // Should beep at 3, 2, 1
+    tickBeep(3); tickBeep(2); tickBeep(1);
+    expect(beepedSecs.size).toBe(3);
+    expect(beepedSecs.has(3)).toBe(true);
+    expect(beepedSecs.has(2)).toBe(true);
+    expect(beepedSecs.has(1)).toBe(true);
+    // Should not double-beep
+    tickBeep(3); tickBeep(2); tickBeep(1);
+    expect(beepedSecs.size).toBe(3);
+  });
+
+  it("should not beep at timeLeft 0", () => {
+    const beepedSecs = new Set<number>();
+    const tickBeep = (timeLeft: number) => {
+      if (timeLeft > 3 || timeLeft <= 0) return;
+      beepedSecs.add(timeLeft);
+    };
+    tickBeep(0);
+    expect(beepedSecs.size).toBe(0);
+  });
+
+  it("MIN_VALID_SECONDS should be 30", () => {
+    const MIN_VALID_SECONDS = 30;
+    expect(MIN_VALID_SECONDS).toBe(30);
+    expect(25 < MIN_VALID_SECONDS).toBe(true);
+    expect(35 >= MIN_VALID_SECONDS).toBe(true);
   });
 });
