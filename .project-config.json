@@ -1,8 +1,8 @@
 {
   "build_command": "pnpm run build",
   "capabilities": [
-    "server",
     "db",
+    "server",
     "user"
   ],
   "dev_command": "pnpm run dev",
@@ -14,10 +14,10 @@
   ],
   "git_remote": {
     "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663379093045/WRH22KQc6ihZTrtZjt6NpA",
-    "access_key_id": "ASIAZV3A2ECZIDLSA7RQ",
-    "secret_access_key": "ZY3W/CttEKIGPTrV0Rw9JKqhXnPYSCWC8tDrPLJ1",
-    "session_token": "IQoJb3JpZ2luX2VjEKr//////////wEaCXVzLWVhc3QtMSJHMEUCIQCED77N+UfKsyGYDwLfmelPl9mEAzAlxtAAMymiO3tE6wIgNTgFGgJ7bLNkUDilPyRgJzfi2vhxlOku361v48WkWT0q9gMIchAEGgw2NjUzODYwOTg4NjYiDNwovoXDTFfpNB4SfSrTA54pBsN5TmwqSwhDmMZuleQb0IssokB57OvyD2ykrsmxOm2rWva05Vg+LOy924/ZxoNGefVi0Vi9oKTMZO2KjIcP2zPmmnZb2adoMCBGc8cyrdSs40LJeYKESDJo84PnBrSDe28p3QeAnnUQzYz8S3Lmm846JtHVezi+3CQ3WO8jz6vd1excfb3roIJ4ExppDnyjznNQL+PYRUl61Gp/UaQ6FZfrkARjbh1EG74s9OlWj6Wjti+Whft9/j7Zt9g7vce5p5v8KrOz2jeeiqRKB6BO51nho9dlDGsfbez1dRXcLIi15U01Io7SItoFAn5KQpO7h99IZISwyQYWsbut9ntGeZAQxEJeQTCR/bF1bq/enJjqjVgRTypzpn1p/oSGVJgR6PFB4nn8I38wLbiA/+PaVvA9A2kYqPPKc89XmXYyP+doTC2jnF+X7/5UvVyi9FOAfcxcK7AfdBs10RalaXZBvaF+tmJEJirCKhtoJ/8OC7MBC91Umw2l7/AcfaYRjuFFmBH19aapw9l4dsF2peeMPc2EZl/jSEDso8vif7v7u1ip++k14lW19ikvk8p0+2COakh7g+6BK3HI4GdYKqqEPG/gVRUS9JGb2uwe2Ta5hXmEMMXKm9AGOp0BG90em8qsR0thIFqC8hdILwYUCIVliYfvRODH2N3VayTUqocs86W0stGD3rIxEVOsJe8Bl3CTpz1iNbLZxRqpYfmsJxVjJMbc7vzld8ZQW0umMpa7WXrOGHRJ4IDI9b+TyUn9usPWpgg40lus98UQ0UlhKtwGAFPHfct0c6ZMugYRPmAp3LHpzYhfRGLNw32MfgGosZQZGg9n4KvQaw==",
-    "expiration": "2026-05-15T21:20:05.000Z"
+    "access_key_id": "ASIAZV3A2ECZMCBG5OTY",
+    "secret_access_key": "gNKTfsjtIJXy1GtxxFGup53b6zgtoFHikG0No8dQ",
+    "session_token": "IQoJb3JpZ2luX2VjEKz//////////wEaCXVzLWVhc3QtMSJHMEUCIBR+0+ath+d33O4MHKcTTTZ2B/mGAfr5g/jzkGphovn1AiEAtwMhaYqqH02W+NO2QGFqRODwrz9B1yjXSl78iee1LH0q9gMIdBAEGgw2NjUzODYwOTg4NjYiDHVUC8xY2dpLCM9rgyrTA2I4eWUNP1MqLAqei7/0AmaTOXz4KZ4D96OCk453A1V7olz9uy21jx2I3uMvAZkX4P7KidXUk5hUqEQZ3EvLclTGedDC86rl8xZ3YWm4Ndnp3PBLEvzxHZabMEVeLW8QUpE/A8hFtRhbPn0s54tza6KL3yv0Vr9Ta+dP+fACXjDTy8aOyGqIMFKqeQWhKrI81k2AHHvttMJ6+Hu6Ze7pQysylKgF52pqEee0yK9ilX1bzaSACnM4JXZKYYiloZvQMXw2+ZGjKtrQkk3iENCEnnCfERUrqrliT2NQAnag9rfTx09X0opP+/JL1Vo5d/Wiz8wCuj/Y08Sw0LADw8e+keTCdosbAo2UPQCqykA0i4v6wh7Ombtq/fVXv4SHSOoZNPbswEe7AIysAzYsbch4XgM0tWqMCXD9r5G7Hu9zLrSJAsatVfkHxOL2upLwGYwGYgNeFcYCNMh8LQjNXN1n2xyO0f1LKSB8hfRloouKoqK9sqOYrT5uTrsHRuKcP1aWagxtG4BpxcU2qw8bKqr/yR6aW99QZsmPjBuAJpxRwM9Wr7fn36wffIVqnXRTTFKPw+Ni+ZiIj/A1I61ILGsPa7/nwOhEE87SQxvKeWZ/LEmNtdOvMPj8m9AGOp0BxwWqKp4dT0a206oBXqG3LWKzAUsUKUuj9fEb1T1v1wujqT+EYNmng6Ue1HdLQUmHwMcdnqMF/DvAQsgMiLeDofnTcFmcypQhtBscpeLTDPYNWjmqyeeyTiArZfPW2FOsx23pT3Dli0c9ccxWPf2hfYTWL1RxSNnoiV6pEeZ4Ivg/LOU8IDgIJdYjXvphiIYUY0wXohfX032D/t51KA==",
+    "expiration": "2026-05-15T23:07:36.000Z"
   },
   "name": "neck-care-ios",
   "path": "/home/ubuntu/neck-care-ios",

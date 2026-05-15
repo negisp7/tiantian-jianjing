@@ -2,6 +2,7 @@ import React from "react";
 import {
   ScrollView, Text, View, Pressable, StyleSheet,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
@@ -46,6 +47,9 @@ export default function CourseDetailScreen() {
     router.push(`/exercise/${course.id}`);
   };
 
+  const insets = useSafeAreaInsets();
+  const safeBottom = Math.max(insets.bottom, 16);
+
   return (
     <ScreenContainer containerClassName="bg-background" edges={["top", "left", "right"]}>
       {/* Nav Bar */}
@@ -61,7 +65,7 @@ export default function CourseDetailScreen() {
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 + safeBottom }} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={[styles.hero, { backgroundColor: diffColor + "15" }]}>
           <View style={[styles.diffBadge, { backgroundColor: diffColor }]}>
@@ -140,7 +144,7 @@ export default function CourseDetailScreen() {
       </ScrollView>
 
       {/* Start Button */}
-      <View style={[styles.startBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+      <View style={[styles.startBar, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: safeBottom + 16 }]}>
         <Pressable
           onPress={handleStart}
           style={({ pressed }) => [
@@ -218,7 +222,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
-    paddingBottom: 32,
     borderTopWidth: 1,
   },
   startBtn: {

@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
@@ -7,6 +8,8 @@ import { useColors } from "@/hooks/use-colors";
 export default function WorkoutTooShortScreen() {
   const colors = useColors();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const safeBottom = Math.max(insets.bottom, 16);
   const params = useLocalSearchParams<{
     courseTitle: string;
     durationSeconds: string;
@@ -21,7 +24,7 @@ export default function WorkoutTooShortScreen() {
       containerClassName="bg-background"
       edges={["top", "left", "right", "bottom"]}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingBottom: safeBottom }]}>
         {/* Icon */}
         <View style={[styles.iconWrap, { backgroundColor: colors.warning + "18" }]}>
           <Text style={styles.icon}>⏱️</Text>

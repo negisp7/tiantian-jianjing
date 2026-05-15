@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
@@ -10,6 +11,8 @@ import { useColors } from "@/hooks/use-colors";
 export default function WorkoutCompleteScreen() {
   const colors = useColors();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const safeBottom = Math.max(insets.bottom, 16);
   const params = useLocalSearchParams<{
     courseTitle: string;
     durationSeconds: string;
@@ -40,7 +43,7 @@ export default function WorkoutCompleteScreen() {
 
   return (
     <ScreenContainer containerClassName="bg-background" edges={["top", "left", "right", "bottom"]}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: safeBottom + 24 }} showsVerticalScrollIndicator={false}>
 
         {/* ── Celebration Header ── */}
         <View style={[styles.hero, { backgroundColor: colors.primary + "12" }]}>
