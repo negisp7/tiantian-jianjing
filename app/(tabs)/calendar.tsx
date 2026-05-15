@@ -35,7 +35,7 @@ export default function CalendarScreen() {
   );
   const [workoutDates, setWorkoutDates] = useState<Set<string>>(new Set());
   const [selectedRecords, setSelectedRecords] = useState<WorkoutRecord[]>([]);
-  const [monthStats, setMonthStats] = useState({ days: 0, totalSeconds: 0 });
+  const [monthStats, setMonthStats] = useState({ days: 0, totalSeconds: 0, totalReps: 0 });
 
   const loadMonth = useCallback(async () => {
     const [dates, records] = await Promise.all([
@@ -45,7 +45,8 @@ export default function CalendarScreen() {
     setWorkoutDates(dates);
     const days = new Set(records.map((r) => r.startTime.slice(0, 10))).size;
     const totalSeconds = records.reduce((s, r) => s + r.durationSeconds, 0);
-    setMonthStats({ days, totalSeconds });
+    const totalReps = records.reduce((s, r) => s + (r.completedExercises ?? 0), 0);
+    setMonthStats({ days, totalSeconds, totalReps });
   }, [viewYear, viewMonth]);
 
   const loadSelected = useCallback(async () => {
@@ -97,6 +98,11 @@ export default function CalendarScreen() {
                 {Math.round(monthStats.totalSeconds / 60)}
               </Text>
               <Text style={[styles.statLabel, { color: colors.muted }]}>本月总分钟</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.primary + "30" }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>{monthStats.totalReps}</Text>
+              <Text style={[styles.statLabel, { color: colors.muted }]}>颈部运动次</Text>
             </View>
           </View>
         </View>
@@ -200,16 +206,27 @@ export default function CalendarScreen() {
                     <Text style={[styles.recordTime, { color: colors.muted }]}>{timeStr}</Text>
                   </View>
                   <Text style={[styles.recordTitle, { color: colors.foreground }]}>{record.courseTitle}</Text>
+                  {/* 颈部运动次数 — 突出展示 */}
+                  <View style={[styles.repsRow, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "20" }]}>
+                    <Text style={styles.repsIcon}>🔁</Text>
+                    <Text style={[styles.repsLabel, { color: colors.muted }]}>颈部运动次数</Text>
+                    <Text style={[styles.repsVal, { color: colors.primary }]}>
+                      {record.completedExercises} 次
+                    </Text>
+                    <Text style={[styles.repsTotal, { color: colors.muted }]}>
+                      / 共 {record.totalExercises} 个动作
+                    </Text>
+                  </View>
                   <View style={styles.recordMeta}>
                     <Text style={[styles.recordMetaText, { color: colors.muted }]}>
-                      ⏱ {Math.round(record.durationSeconds / 60)} 分钟
+                      ⏱ {Math.floor(record.durationSeconds / 60)}:{String(record.durationSeconds % 60).padStart(2, "0")} 真实时长
                     </Text>
-                    <Text style={[styles.recordMetaText, { color: colors.muted }]}>
-                      🏃 {record.completedExercises}/{record.totalExercises} 动作
-                    </Text>
+                    {record.usedAirPods && (
+                      <Text style={[styles.recordMetaText, { color: colors.muted }]}>🎧 AirPods</Text>
+                    )}
                     {record.motionData && (
                       <Text style={[styles.recordMetaText, { color: colors.muted }]}>
-                        📡 最大 {record.motionData.maxAngle}°
+                        📡 最大活动角 {record.motionData.maxAngle}°
                       </Text>
                     )}
                   </View>
@@ -288,4 +305,18 @@ const styles = StyleSheet.create({
   recordTitle: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
   recordMeta: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
   recordMetaText: { fontSize: 12 },
+  repsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  repsIcon: { fontSize: 14 },
+  repsLabel: { fontSize: 12, flex: 1 },
+  repsVal: { fontSize: 16, fontWeight: "800" },
+  repsTotal: { fontSize: 12 },
 });
