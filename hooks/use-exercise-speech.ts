@@ -56,7 +56,7 @@ export function useExerciseSpeech(enabled = true) {
   // 初始化：允许静音模式下播放
   useEffect(() => {
     if (Platform.OS === "web") return;
-    setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => {});
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
     // 预加载女声 ID
     getFemaleVoiceId().catch(() => {});
     return () => {
