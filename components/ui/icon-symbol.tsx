@@ -8,23 +8,50 @@ import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 type IconMapping = Record<SymbolViewProps["name"], ComponentProps<typeof MaterialIcons>["name"]>;
 type IconSymbolName = keyof typeof MAPPING;
 
-/**
- * Add your SF Symbols to Material Icons mappings here.
- * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
- * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
- */
 const MAPPING = {
+  // Navigation
   "house.fill": "home",
+  "figure.walk": "directions-walk",
+  "calendar": "calendar-today",
+  "person.fill": "person",
+  // General
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
+  "chevron.left": "chevron-left",
+  "chevron.down": "expand-more",
+  "xmark": "close",
+  "checkmark": "check",
+  "checkmark.circle.fill": "check-circle",
+  "play.fill": "play-arrow",
+  "pause.fill": "pause",
+  "stop.fill": "stop",
+  "arrow.clockwise": "refresh",
+  "arrow.left": "arrow-back",
+  "arrow.right": "arrow-forward",
+  // Health / Exercise
+  "heart.fill": "favorite",
+  "flame.fill": "local-fire-department",
+  "bolt.fill": "bolt",
+  "star.fill": "star",
+  "clock.fill": "access-time",
+  "timer": "timer",
+  "waveform": "graphic-eq",
+  "chart.bar.fill": "bar-chart",
+  "trophy.fill": "emoji-events",
+  // Settings
+  "gear": "settings",
+  "bell.fill": "notifications",
+  "moon.fill": "dark-mode",
+  "sun.max.fill": "light-mode",
+  "info.circle.fill": "info",
+  "exclamationmark.triangle.fill": "warning",
+  // AirPods
+  "airpodspro": "headset",
+  "headphones": "headset",
+  "gyroscope": "360",
 } as IconMapping;
 
-/**
- * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
- * This ensures a consistent look across platforms, and optimal resource usage.
- * Icon `name`s are based on SF Symbols and require manual mapping to Material Icons.
- */
 export function IconSymbol({
   name,
   size = 24,

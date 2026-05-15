@@ -1,0 +1,72 @@
+# NeckCare Coach — TODO
+
+## 品牌与配置
+- [x] 生成应用图标（颈椎/健康主题）
+- [x] 更新 theme.config.js 颜色方案（天蓝色系）
+- [x] 更新 app.config.ts 应用名称与品牌信息
+- [x] 配置 tailwind.config.js 扩展颜色
+
+## 数据层
+- [x] 创建课程数据（轻度/中度/重度，含动作列表）
+- [x] 创建每日 Tips 数据（30 条）
+- [x] 创建 WorkoutStore（AsyncStorage 持久化锻炼记录）
+- [x] 定义 TypeScript 类型（Course, Exercise, WorkoutRecord, DailyTip）
+
+## 导航结构
+- [x] 配置 4 个 Tab（首页、课程、日历、我的）
+- [x] 添加图标映射（icon-symbol.tsx）
+- [x] 创建课程详情页路由
+- [x] 创建运动引导页路由
+- [x] 创建运动完成页路由
+
+## 首页（Home）
+- [x] 顶部问候语 + 日期
+- [x] 每日 Tips 卡片（可滑动）
+- [x] 今日推荐课程卡片
+- [x] 本周锻炼统计柱状图
+- [x] 快速开始按钮
+
+## 课程页（Courses）
+- [x] 难度筛选 Segmented Control
+- [x] 课程卡片列表（FlatList）
+- [x] 课程详情页（CourseDetail）
+- [x] "开始锻炼"按钮跳转
+
+## 运动引导（ExerciseGuide）
+- [x] 全屏沉浸式布局
+- [x] 动作名称 + 动作图标
+- [x] 步骤进度条
+- [x] 倒计时圆环动画（SVG + Reanimated）
+- [x] 上一步 / 暂停 / 下一步控制
+- [x] 保持屏幕常亮（expo-keep-awake）
+
+## 陀螺仪功能
+- [x] 设备陀螺仪数据读取（expo-sensors）
+- [x] AirPods 运动传感器模拟界面（开关切换）
+- [x] 实时头部运动角度显示（Pitch/Yaw/Roll）
+- [x] 运动数据可视化（进度条）
+- [x] 锻炼结束后保存运动数据
+
+## 运动完成页（WorkoutComplete）
+- [x] 完成庆祝动画（emoji + 徽章）
+- [x] 统计卡片（时长、动作数、运动范围）
+- [x] 保存记录到 AsyncStorage
+- [x] 操作按钮（再练一次 / 返回首页）
+
+## 日历页（Calendar）
+- [x] 月历视图（自定义日历组件）
+- [x] 有记录日期标绿点
+- [x] 选中日期显示锻炼记录
+- [x] 本月统计（天数 + 总时长）
+
+## 我的页（Profile）
+- [x] 用户昵称展示
+- [x] 累计统计展示
+- [x] AirPods 连接状态模拟
+- [x] 设置项（通知、AirPods）
+
+## 整体联调
+- [x] 所有页面跳转流程验证
+- [x] 数据持久化验证（11 个单元测试全部通过）
+- [x] UI 一致性检查
+- [x] 保存检查点
