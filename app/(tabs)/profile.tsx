@@ -58,8 +58,8 @@ export default function ProfileScreen() {
   );
 
   return (
-    <ScreenContainer containerClassName="bg-background">
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScreenContainer containerClassName="bg-primary">
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false} style={{ backgroundColor: colors.background }}>
         {/* ── Header ── */}
         <View style={[styles.header, { backgroundColor: colors.primary }]}>
           <View style={styles.avatarContainer}>

@@ -58,10 +58,11 @@ export default function HomeScreen() {
   const todayCourses = COURSES.slice(0, 2);
 
   return (
-    <ScreenContainer containerClassName="bg-background">
+    <ScreenContainer containerClassName="bg-primary">
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
+        style={{ backgroundColor: colors.background }}
       >
         {/* ── Header ── */}
         <View style={[styles.header, { backgroundColor: colors.primary }]}>

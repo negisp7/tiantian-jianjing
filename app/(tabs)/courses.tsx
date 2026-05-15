@@ -92,7 +92,7 @@ export default function CoursesScreen() {
   };
 
   return (
-    <ScreenContainer containerClassName="bg-background">
+    <ScreenContainer containerClassName="bg-surface">
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>颈椎课程</Text>

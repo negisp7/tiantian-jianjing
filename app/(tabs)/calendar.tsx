@@ -80,7 +80,7 @@ export default function CalendarScreen() {
     <ScreenContainer containerClassName="bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
         {/* ── Header ── */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.foreground }]}>锻炼日历</Text>
           <Text style={[styles.headerSub, { color: colors.muted }]}>追踪你的颈椎健康之旅</Text>
         </View>
