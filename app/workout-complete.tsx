@@ -22,10 +22,14 @@ export default function WorkoutCompleteScreen() {
     usedAirPods: string;
   }>();
 
-  const durationMin = Math.floor(Number(params.durationSeconds) / 60);
-  const durationSec = Number(params.durationSeconds) % 60;
-  const completed = Number(params.completedExercises);
-  const total = Number(params.totalExercises);
+  // ── 真实时长（秒表计时，非课程预设）────────────────────────────────────────
+  const realSeconds  = Number(params.durationSeconds);
+  const durationMin  = Math.floor(realSeconds / 60);
+  const durationSec  = realSeconds % 60;
+
+  // ── 运动次数（实际完成的步骤数）────────────────────────────────────────────
+  const completed    = Number(params.completedExercises);
+  const total        = Number(params.totalExercises);
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   useEffect(() => {
@@ -37,13 +41,12 @@ export default function WorkoutCompleteScreen() {
   return (
     <ScreenContainer containerClassName="bg-background" edges={["top", "left", "right", "bottom"]}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+
         {/* ── Celebration Header ── */}
         <View style={[styles.hero, { backgroundColor: colors.primary + "12" }]}>
           <Text style={styles.celebrationEmoji}>🎉</Text>
           <Text style={[styles.heroTitle, { color: colors.foreground }]}>锻炼完成！</Text>
-          <Text style={[styles.heroSub, { color: colors.muted }]}>
-            {params.courseTitle}
-          </Text>
+          <Text style={[styles.heroSub, { color: colors.muted }]}>{params.courseTitle}</Text>
           <View style={[styles.completionBadge, { backgroundColor: colors.success + "20" }]}>
             <Text style={[styles.completionText, { color: colors.success }]}>
               完成度 {completionRate}%
@@ -51,32 +54,56 @@ export default function WorkoutCompleteScreen() {
           </View>
         </View>
 
-        {/* ── Duration Stats ── */}
+        {/* ── Core Stats ── */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>锻炼统计</Text>
           <View style={[styles.statsGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+
+            {/* 真实锻炼时长 */}
             <View style={styles.statItem}>
               <Text style={styles.statIcon}>⏱️</Text>
               <Text style={[styles.statNum, { color: colors.foreground }]}>
-                {durationMin}:{String(durationSec).padStart(2, "0")}
+                {String(durationMin).padStart(2, "0")}:{String(durationSec).padStart(2, "0")}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.muted }]}>锻炼时长</Text>
+              <Text style={[styles.statLabel, { color: colors.muted }]}>真实时长</Text>
             </View>
+
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+
+            {/* 颈部运动次数（完成的动作步骤数） */}
             <View style={styles.statItem}>
-              <Text style={styles.statIcon}>🏃</Text>
+              <Text style={styles.statIcon}>🔁</Text>
               <Text style={[styles.statNum, { color: colors.foreground }]}>
-                {completed}/{total}
+                {completed}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.muted }]}>完成动作</Text>
+              <Text style={[styles.statLabel, { color: colors.muted }]}>颈部运动次</Text>
             </View>
+
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+
+            {/* 卡路里估算 */}
             <View style={styles.statItem}>
               <Text style={styles.statIcon}>🔥</Text>
               <Text style={[styles.statNum, { color: colors.foreground }]}>
-                {Math.round(Number(params.durationSeconds) / 60 * 2)}
+                {Math.max(1, Math.round(realSeconds / 60 * 2))}
               </Text>
               <Text style={[styles.statLabel, { color: colors.muted }]}>卡路里</Text>
+            </View>
+          </View>
+
+          {/* 动作完成进度条 */}
+          <View style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.progressHeader}>
+              <Text style={[styles.progressLabel, { color: colors.muted }]}>动作完成进度</Text>
+              <Text style={[styles.progressVal, { color: colors.foreground }]}>
+                {completed} / {total} 个动作
+              </Text>
+            </View>
+            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+              <View style={[
+                styles.progressFill,
+                { backgroundColor: colors.success, width: `${completionRate}%` as any },
+              ]} />
             </View>
           </View>
         </View>
@@ -93,9 +120,9 @@ export default function WorkoutCompleteScreen() {
           </View>
           <View style={[styles.motionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {[
-              { label: "俯仰范围（前屈/后伸）", value: params.pitchRange, unit: "°", color: "#4A90D9", icon: "↕️" },
-              { label: "偏航范围（左右旋转）",   value: params.yawRange,   unit: "°", color: "#34C759", icon: "↔️" },
-              { label: "横滚范围（侧向倾斜）",   value: params.rollRange,  unit: "°", color: "#FF9500", icon: "🔄" },
+              { label: "俯仰（前屈/后伸）", value: params.pitchRange, color: "#4A90D9", icon: "↕️" },
+              { label: "偏航（左右旋转）",  value: params.yawRange,   color: "#34C759", icon: "↔️" },
+              { label: "横滚（侧向倾斜）",  value: params.rollRange,  color: "#FF9500", icon: "🔄" },
             ].map((m) => (
               <View key={m.label} style={styles.motionRow}>
                 <Text style={styles.motionRowIcon}>{m.icon}</Text>
@@ -106,7 +133,7 @@ export default function WorkoutCompleteScreen() {
                     { backgroundColor: m.color, width: `${Math.min(100, Number(m.value) * 1.5)}%` as any },
                   ]} />
                 </View>
-                <Text style={[styles.motionRowVal, { color: m.color }]}>{m.value}{m.unit}</Text>
+                <Text style={[styles.motionRowVal, { color: m.color }]}>{m.value}°</Text>
               </View>
             ))}
             <View style={[styles.maxAngleRow, { borderTopColor: colors.border }]}>
@@ -150,6 +177,7 @@ export default function WorkoutCompleteScreen() {
             <Text style={[styles.secondaryBtnText, { color: colors.foreground }]}>再练一次</Text>
           </Pressable>
         </View>
+
       </ScrollView>
     </ScreenContainer>
   );
@@ -176,12 +204,24 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     justifyContent: "space-around",
+    marginBottom: 12,
   },
   statItem: { alignItems: "center", gap: 4 },
   statIcon: { fontSize: 24 },
   statNum: { fontSize: 22, fontWeight: "700" },
   statLabel: { fontSize: 11 },
   statDivider: { width: 1, height: 48, alignSelf: "center" },
+  progressCard: {
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    gap: 8,
+  },
+  progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  progressLabel: { fontSize: 13 },
+  progressVal: { fontSize: 13, fontWeight: "600" },
+  progressTrack: { height: 8, borderRadius: 4, overflow: "hidden" },
+  progressFill: { height: 8, borderRadius: 4 },
   airpodsBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   airpodsText: { fontSize: 12, fontWeight: "600" },
   motionCard: {

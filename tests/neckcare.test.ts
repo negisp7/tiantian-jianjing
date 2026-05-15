@@ -49,8 +49,8 @@ describe("Courses Data", () => {
 });
 
 describe("Daily Tips Data", () => {
-  it("should have exactly 30 tips", () => {
-    expect(DAILY_TIPS.length).toBe(30);
+  it("should have exactly 60 tips", () => {
+    expect(DAILY_TIPS.length).toBe(60);
   });
 
   it("should return a tip for today", () => {

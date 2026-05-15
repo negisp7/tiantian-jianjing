@@ -5,7 +5,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
-import Svg, { Circle, Path, G } from "react-native-svg";
+import Svg, { Circle } from "react-native-svg";
 import Animated, {
   useSharedValue, useAnimatedProps, withTiming, Easing,
 } from "react-native-reanimated";
@@ -23,7 +23,7 @@ if (Platform.OS !== "web") {
   try { Gyroscope = require("expo-sensors").Gyroscope; } catch {}
 }
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+const { width: SCREEN_W } = Dimensions.get("window");
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const MOTION_ICONS: Record<string, string> = {
@@ -42,6 +42,9 @@ const MOTION_GUIDE: Record<string, string> = {
   static:       "保持静止，均匀呼吸",
 };
 
+/** 最短有效锻炼时长（秒） */
+const MIN_VALID_SECONDS = 30;
+
 export default function ExerciseGuideScreen() {
   useKeepAwake();
 
@@ -55,31 +58,36 @@ export default function ExerciseGuideScreen() {
   const [isPaused, setIsPaused] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
 
-  // Motion tracking
-  const [motionData, setMotionData] = useState<MotionData>({ pitchRange: 0, yawRange: 0, rollRange: 0, maxAngle: 0 });
+  // ── 真实秒表 ────────────────────────────────────────────────────────────────
+  // 记录"开始按下"的时刻，暂停时累计已用时间
+  const wallStartRef   = useRef<number>(0);   // Date.now() at last resume
+  const accumulatedRef = useRef<number>(0);   // ms accumulated before current segment
+  const [elapsedSec, setElapsedSec]   = useState(0); // display only
+
+  // ── 运动次数（每完成一个动作步骤 +1）────────────────────────────────────────
+  const repCountRef = useRef<number>(0);
+
+  // ── 陀螺仪 ──────────────────────────────────────────────────────────────────
   const [liveAngles, setLiveAngles] = useState({ pitch: 0, yaw: 0, roll: 0 });
   const [airpodsConnected, setAirpodsConnected] = useState(false);
   const gyroAccum = useRef({ pitch: 0, yaw: 0, roll: 0, maxPitch: 0, maxYaw: 0, maxRoll: 0 });
-  const startTimeRef = useRef<Date>(new Date());
-  const completedRef = useRef(0);
 
-  // Animated countdown ring
+  // ── 倒计时圆环 ───────────────────────────────────────────────────────────────
   const progress = useSharedValue(1);
   const RING_R = 54;
   const CIRCUMFERENCE = 2 * Math.PI * RING_R;
-
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
   }));
 
   const currentExercise = course?.exercises[stepIdx];
 
-  // ── Gyroscope ──────────────────────────────────────────────────────────────
+  // ── 陀螺仪订阅 ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!Gyroscope || Platform.OS === "web") return;
     Gyroscope.setUpdateInterval(100);
     const sub = Gyroscope.addListener((data: { x: number; y: number; z: number }) => {
-      const dt = 0.1; // 100ms
+      const dt = 0.1;
       const pitchDelta = data.x * dt * (180 / Math.PI);
       const yawDelta   = data.z * dt * (180 / Math.PI);
       const rollDelta  = data.y * dt * (180 / Math.PI);
@@ -101,26 +109,23 @@ export default function ExerciseGuideScreen() {
     return () => sub.remove();
   }, []);
 
-  // ── Timer ──────────────────────────────────────────────────────────────────
+  // ── 当前步骤倒计时初始化 ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!currentExercise) return;
-    const dur = currentExercise.durationSeconds;
-    setTimeLeft(dur);
+    setTimeLeft(currentExercise.durationSeconds);
     progress.value = 1;
-    withTiming(0, { duration: dur * 1000, easing: Easing.linear });
   }, [stepIdx, currentExercise]);
 
+  // ── 倒计时 ticker ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isStarted || isPaused || !currentExercise) return;
-    if (timeLeft <= 0) {
-      handleNextStep();
-      return;
-    }
-    const dur = currentExercise.durationSeconds;
+    if (timeLeft <= 0) return; // handleNextStep 由下面的 effect 触发
+
     progress.value = withTiming(0, {
       duration: timeLeft * 1000,
       easing: Easing.linear,
     });
+
     const interval = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) { clearInterval(interval); return 0; }
@@ -130,25 +135,54 @@ export default function ExerciseGuideScreen() {
     return () => clearInterval(interval);
   }, [isStarted, isPaused, stepIdx]);
 
+  // ── 倒计时归零自动进入下一步 ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (isStarted && !isPaused && timeLeft === 0 && currentExercise) {
+      handleNextStep();
+    }
+  }, [timeLeft]);
+
+  // ── 真实秒表 ticker（每秒刷新显示） ─────────────────────────────────────────
+  useEffect(() => {
+    if (!isStarted || isPaused) return;
+    const interval = setInterval(() => {
+      const nowElapsed = accumulatedRef.current + (Date.now() - wallStartRef.current);
+      setElapsedSec(Math.floor(nowElapsed / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isStarted, isPaused]);
+
+  // ── 开始 ─────────────────────────────────────────────────────────────────────
   const handleStart = () => {
+    wallStartRef.current = Date.now();
+    accumulatedRef.current = 0;
+    repCountRef.current = 0;
     setIsStarted(true);
-    startTimeRef.current = new Date();
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  // ── 暂停 / 继续 ──────────────────────────────────────────────────────────────
   const handlePause = () => {
+    if (!isPaused) {
+      // 暂停：累计已用时间
+      accumulatedRef.current += Date.now() - wallStartRef.current;
+      progress.value = withTiming(progress.value, { duration: 0 });
+    } else {
+      // 继续：重置 wall start
+      wallStartRef.current = Date.now();
+    }
     setIsPaused((p) => !p);
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!isPaused) {
-      progress.value = withTiming(progress.value, { duration: 0 });
-    }
   };
 
+  // ── 下一步 ───────────────────────────────────────────────────────────────────
   const handleNextStep = useCallback(() => {
     if (!course) return;
-    completedRef.current = stepIdx + 1;
+    // 每完成一个步骤，运动次数 +1
+    repCountRef.current = stepIdx + 1;
+
     if (stepIdx >= course.exercises.length - 1) {
-      finishWorkout();
+      finishWorkout(stepIdx + 1);
       return;
     }
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -157,6 +191,7 @@ export default function ExerciseGuideScreen() {
     progress.value = 1;
   }, [course, stepIdx]);
 
+  // ── 上一步 ───────────────────────────────────────────────────────────────────
   const handlePrevStep = () => {
     if (stepIdx === 0) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -165,10 +200,32 @@ export default function ExerciseGuideScreen() {
     progress.value = 1;
   };
 
-  const finishWorkout = async () => {
+  // ── 完成锻炼 ─────────────────────────────────────────────────────────────────
+  const finishWorkout = async (completedSteps: number) => {
     if (!course) return;
-    const endTime = new Date();
-    const duration = Math.round((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
+
+    // 计算真实锻炼时长（秒）
+    const totalMs = isPaused
+      ? accumulatedRef.current
+      : accumulatedRef.current + (Date.now() - wallStartRef.current);
+    const realDurationSeconds = Math.floor(totalMs / 1000);
+
+    // ── 不足 30 秒：不保存，跳转提示页 ─────────────────────────────────────
+    if (realDurationSeconds < MIN_VALID_SECONDS) {
+      router.replace({
+        pathname: "/workout-too-short",
+        params: {
+          courseTitle: course.title,
+          durationSeconds: String(realDurationSeconds),
+          minSeconds: String(MIN_VALID_SECONDS),
+        },
+      });
+      return;
+    }
+
+    // ── 正常完成：保存记录 ───────────────────────────────────────────────────
+    const startTime = new Date(Date.now() - totalMs);
+    const endTime   = new Date();
     const g = gyroAccum.current;
     const motion: MotionData = {
       pitchRange: Math.round(g.maxPitch),
@@ -181,23 +238,23 @@ export default function ExerciseGuideScreen() {
       courseId: course.id,
       courseTitle: course.title,
       difficulty: course.difficulty,
-      startTime: startTimeRef.current.toISOString(),
+      startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      durationSeconds: duration,
-      completedExercises: completedRef.current,
+      durationSeconds: realDurationSeconds,
+      completedExercises: completedSteps,
       totalExercises: course.exercises.length,
       motionData: motion,
       usedAirPods: airpodsConnected,
     };
     await WorkoutStore.save(record);
-    setMotionData(motion);
+
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.replace({
       pathname: "/workout-complete",
       params: {
         courseTitle: course.title,
-        durationSeconds: String(duration),
-        completedExercises: String(completedRef.current),
+        durationSeconds: String(realDurationSeconds),
+        completedExercises: String(completedSteps),
         totalExercises: String(course.exercises.length),
         pitchRange: String(motion.pitchRange),
         yawRange: String(motion.yawRange),
@@ -219,6 +276,8 @@ export default function ExerciseGuideScreen() {
   }
 
   const totalSteps = course.exercises.length;
+  const elapsedMin = Math.floor(elapsedSec / 60);
+  const elapsedSecDisplay = elapsedSec % 60;
 
   return (
     <ScreenContainer
@@ -254,6 +313,32 @@ export default function ExerciseGuideScreen() {
           { backgroundColor: colors.primary, width: `${((stepIdx + 1) / totalSteps) * 100}%` as any },
         ]} />
       </View>
+
+      {/* ── Real-time Stats Bar ── */}
+      {isStarted && (
+        <View style={[styles.statsBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <View style={styles.statsBarItem}>
+            <Text style={[styles.statsBarNum, { color: colors.primary }]}>
+              {String(elapsedMin).padStart(2, "0")}:{String(elapsedSecDisplay).padStart(2, "0")}
+            </Text>
+            <Text style={[styles.statsBarLabel, { color: colors.muted }]}>已锻炼</Text>
+          </View>
+          <View style={[styles.statsBarDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.statsBarItem}>
+            <Text style={[styles.statsBarNum, { color: colors.success }]}>
+              {repCountRef.current}
+            </Text>
+            <Text style={[styles.statsBarLabel, { color: colors.muted }]}>已完成动作</Text>
+          </View>
+          <View style={[styles.statsBarDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.statsBarItem}>
+            <Text style={[styles.statsBarNum, { color: colors.foreground }]}>
+              {totalSteps - repCountRef.current}
+            </Text>
+            <Text style={[styles.statsBarLabel, { color: colors.muted }]}>剩余动作</Text>
+          </View>
+        </View>
+      )}
 
       {/* ── Main Content ── */}
       <View style={styles.mainContent}>
@@ -371,7 +456,7 @@ export default function ExerciseGuideScreen() {
             </Pressable>
 
             <Pressable
-              onPress={handleNextStep}
+              onPress={() => handleNextStep()}
               style={({ pressed }) => [
                 styles.controlBtn,
                 { backgroundColor: colors.surface, borderColor: colors.border },
@@ -393,58 +478,72 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
   },
   backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  navTitle: { fontSize: 15, fontWeight: "600" },
+  navTitle: { fontSize: 15, fontWeight: "700" },
   navSub: { fontSize: 12, marginTop: 1 },
   airpodsBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  progressTrack: { height: 3, width: "100%" },
-  progressFill: { height: 3, borderRadius: 2 },
+  progressTrack: { height: 3 },
+  progressFill: { height: 3 },
+  statsBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  statsBarItem: { alignItems: "center" },
+  statsBarNum: { fontSize: 18, fontWeight: "700" },
+  statsBarLabel: { fontSize: 10, marginTop: 1 },
+  statsBarDivider: { width: 1, height: 28 },
   mainContent: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    gap: 12,
+    gap: 8,
   },
   motionIconContainer: {
-    width: 80, height: 80, borderRadius: 24,
+    width: 80, height: 80, borderRadius: 40,
     alignItems: "center", justifyContent: "center",
+    marginBottom: 4,
   },
   motionIcon: { fontSize: 40 },
   exerciseName: { fontSize: 22, fontWeight: "800", textAlign: "center" },
-  exerciseGuide: { fontSize: 14, textAlign: "center", fontStyle: "italic" },
+  exerciseGuide: { fontSize: 13, textAlign: "center", fontStyle: "italic" },
   exerciseDesc: { fontSize: 13, textAlign: "center", lineHeight: 19, maxWidth: 280 },
-  countdownContainer: { position: "relative", alignItems: "center", justifyContent: "center", marginTop: 8 },
+  countdownContainer: {
+    width: 130, height: 130,
+    alignItems: "center", justifyContent: "center",
+    marginTop: 8,
+  },
   countdownInner: {
     position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center", justifyContent: "center",
   },
   countdownNum: { fontSize: 36, fontWeight: "800" },
-  countdownLabel: { fontSize: 12 },
+  countdownLabel: { fontSize: 12, marginTop: -4 },
   gyroPanel: {
     marginHorizontal: 16,
     marginBottom: 8,
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 14,
     borderWidth: 1,
+    padding: 12,
   },
-  gyroHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
-  gyroIcon: { fontSize: 16 },
-  gyroTitle: { fontSize: 13, fontWeight: "600" },
-  gyroMetrics: { gap: 8 },
+  gyroHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  gyroIcon: { fontSize: 14 },
+  gyroTitle: { fontSize: 12, fontWeight: "600" },
+  gyroMetrics: { gap: 6 },
   gyroMetricItem: { flexDirection: "row", alignItems: "center", gap: 8 },
-  gyroBar: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
-  gyroBarFill: { height: 6, borderRadius: 3 },
+  gyroBar: { flex: 1, height: 5, borderRadius: 3, overflow: "hidden" },
+  gyroBarFill: { height: 5, borderRadius: 3 },
   gyroMetricLabel: { fontSize: 11, width: 28 },
-  gyroMetricVal: { fontSize: 12, fontWeight: "600", width: 44, textAlign: "right" },
+  gyroMetricVal: { fontSize: 12, fontWeight: "600", width: 40, textAlign: "right" },
   controls: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    paddingBottom: 32,
+    paddingVertical: 12,
     borderTopWidth: 1,
   },
   startBtn: {
@@ -453,14 +552,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   startBtnText: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  controlRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20 },
+  controlRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+  },
   controlBtn: {
     width: 52, height: 52, borderRadius: 16,
     alignItems: "center", justifyContent: "center",
     borderWidth: 1,
   },
   pauseBtn: {
-    width: 68, height: 68, borderRadius: 20,
+    flex: 1, height: 52, borderRadius: 16,
     alignItems: "center", justifyContent: "center",
   },
 });
