@@ -118,16 +118,16 @@ export default function ProfileScreen() {
                 thumbColor={airpodsEnabled ? colors.primary : colors.muted}
               />
             </View>
-            {airpodsEnabled && (
-              <View style={[styles.airpodsFeatures, { borderTopColor: colors.primary + "20" }]}>
-                {["精准俯仰角检测", "头部旋转追踪", "活动度分析报告"].map((f) => (
-                  <View key={f} style={styles.featureRow}>
-                    <Text style={[styles.featureCheck, { color: colors.primary }]}>✓</Text>
-                    <Text style={[styles.featureText, { color: colors.muted }]}>{f}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
+            <View style={[styles.airpodsFeatures, { borderTopColor: airpodsEnabled ? colors.primary + "20" : colors.border }]}>
+              {["精准俯仰角检测", "头部旋转追踪", "活动度分析报告"].map((f) => (
+                <View key={f} style={styles.featureRow}>
+                  <Text style={[styles.featureCheck, { color: airpodsEnabled ? colors.primary : colors.error }]}>
+                    {airpodsEnabled ? "✓" : "✗"}
+                  </Text>
+                  <Text style={[styles.featureText, { color: airpodsEnabled ? colors.muted : colors.muted, opacity: airpodsEnabled ? 1 : 0.5 }]}>{f}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         </View>
 
