@@ -1,0 +1,51 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://3BAR3itx8gtwFJD.f0b2334c3ae4:G43WpFWHat68oZ2TYq7A@gateway04.us-east-1.prod.aws.tidbcloud.com:4000/WRH22KQc6ihZTrtZjt6NpA?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663379093045/WRH22KQc6ihZTrtZjt6NpA",
+    "access_key_id": "ASIAZV3A2ECZIDLSA7RQ",
+    "secret_access_key": "ZY3W/CttEKIGPTrV0Rw9JKqhXnPYSCWC8tDrPLJ1",
+    "session_token": "IQoJb3JpZ2luX2VjEKr//////////wEaCXVzLWVhc3QtMSJHMEUCIQCED77N+UfKsyGYDwLfmelPl9mEAzAlxtAAMymiO3tE6wIgNTgFGgJ7bLNkUDilPyRgJzfi2vhxlOku361v48WkWT0q9gMIchAEGgw2NjUzODYwOTg4NjYiDNwovoXDTFfpNB4SfSrTA54pBsN5TmwqSwhDmMZuleQb0IssokB57OvyD2ykrsmxOm2rWva05Vg+LOy924/ZxoNGefVi0Vi9oKTMZO2KjIcP2zPmmnZb2adoMCBGc8cyrdSs40LJeYKESDJo84PnBrSDe28p3QeAnnUQzYz8S3Lmm846JtHVezi+3CQ3WO8jz6vd1excfb3roIJ4ExppDnyjznNQL+PYRUl61Gp/UaQ6FZfrkARjbh1EG74s9OlWj6Wjti+Whft9/j7Zt9g7vce5p5v8KrOz2jeeiqRKB6BO51nho9dlDGsfbez1dRXcLIi15U01Io7SItoFAn5KQpO7h99IZISwyQYWsbut9ntGeZAQxEJeQTCR/bF1bq/enJjqjVgRTypzpn1p/oSGVJgR6PFB4nn8I38wLbiA/+PaVvA9A2kYqPPKc89XmXYyP+doTC2jnF+X7/5UvVyi9FOAfcxcK7AfdBs10RalaXZBvaF+tmJEJirCKhtoJ/8OC7MBC91Umw2l7/AcfaYRjuFFmBH19aapw9l4dsF2peeMPc2EZl/jSEDso8vif7v7u1ip++k14lW19ikvk8p0+2COakh7g+6BK3HI4GdYKqqEPG/gVRUS9JGb2uwe2Ta5hXmEMMXKm9AGOp0BG90em8qsR0thIFqC8hdILwYUCIVliYfvRODH2N3VayTUqocs86W0stGD3rIxEVOsJe8Bl3CTpz1iNbLZxRqpYfmsJxVjJMbc7vzld8ZQW0umMpa7WXrOGHRJ4IDI9b+TyUn9usPWpgg40lus98UQ0UlhKtwGAFPHfct0c6ZMugYRPmAp3LHpzYhfRGLNw32MfgGosZQZGg9n4KvQaw==",
+    "expiration": "2026-05-15T21:20:05.000Z"
+  },
+  "name": "neck-care-ios",
+  "path": "/home/ubuntu/neck-care-ios",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "gmZ2bLLrXzskwuaff392rK",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "EXPO_APP_QR_URL": "exps://8081-izkl13t0w05j2bblk5imc-1d80a657.us2.manus.computer",
+    "EXPO_PACKAGER_PROXY_URL": "https://8081-izkl13t0w05j2bblk5imc-1d80a657.us2.manus.computer",
+    "EXPO_PUBLIC_API_BASE_URL": "https://3000-izkl13t0w05j2bblk5imc-1d80a657.us2.manus.computer",
+    "EXPO_PUBLIC_OAUTH_PORTAL_URL": "https://manus.im",
+    "EXPO_PUBLIC_OAUTH_SERVER_URL": "https://api.manus.im",
+    "EXPO_PUBLIC_OWNER_NAME": "薛元",
+    "EXPO_PUBLIC_OWNER_OPEN_ID": "VcibpL4YKzmLcW86k7goYV",
+    "JWT_SECRET": "2KQR3NEJ8YLzBEqsREhTdc",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "薛元",
+    "OWNER_OPEN_ID": "VcibpL4YKzmLcW86k7goYV",
+    "REACT_NATIVE_PACKAGER_HOSTNAME": "8081-izkl13t0w05j2bblk5imc-1d80a657.us2.manus.computer",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "c9164cc4-d9e2-4f85-9e59-a970ac415feb",
+    "VITE_APP_ID": "WRH22KQc6ihZTrtZjt6NpA",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "NeckCare Coach",
+    "VITE_FRONTEND_FORGE_API_KEY": "X4e74XkdWAqSB8QWjp24Ct",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "app",
+  "test_command": "pnpm test"
+}
