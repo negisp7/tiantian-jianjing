@@ -10,7 +10,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { Platform } from "react-native";
 import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
-import type { AudioPlayer } from "expo-audio";
+import type { AudioPlayer, AudioStatus } from "expo-audio";
 import * as Speech from "expo-speech";
 import { AUDIO_MAP, getAudioKey } from "@/lib/audio-map";
 
@@ -61,6 +61,60 @@ function playAudioKey(key: string | null): AudioPlayer | null {
   }
 }
 
+function stopPlayer(player: AudioPlayer | null) {
+  if (!player) return;
+  try { player.pause(); } catch {}
+  try { player.remove(); } catch {}
+}
+
+function waitForPlayerToFinish(player: AudioPlayer, shouldCancel: () => boolean): Promise<void> {
+  return new Promise((resolve) => {
+    let resolved = false;
+    let subscription: { remove: () => void } | null = null;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelTimer: ReturnType<typeof setInterval> | null = null;
+
+    const done = () => {
+      if (resolved) return;
+      resolved = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (cancelTimer) clearInterval(cancelTimer);
+      try { subscription?.remove(); } catch {}
+      stopPlayer(player);
+      resolve();
+    };
+
+    const scheduleFallback = (duration: number, currentTime: number) => {
+      if (fallbackTimer || !duration || duration <= 0) return;
+      const remainingMs = Math.max((duration - currentTime) * 1000 + 1500, 3000);
+      fallbackTimer = setTimeout(done, remainingMs);
+    };
+
+    try {
+      subscription = player.addListener("playbackStatusUpdate", (status: AudioStatus) => {
+        if (shouldCancel()) {
+          done();
+          return;
+        }
+        if (status.didJustFinish || (!status.playing && status.currentTime >= status.duration && status.duration > 0)) {
+          done();
+          return;
+        }
+        scheduleFallback(status.duration, status.currentTime);
+      });
+    } catch {
+      fallbackTimer = setTimeout(done, 60000);
+      return;
+    }
+
+    scheduleFallback(player.duration, player.currentTime);
+    fallbackTimer = fallbackTimer ?? setTimeout(done, 60000);
+    cancelTimer = setInterval(() => {
+      if (shouldCancel()) done();
+    }, 100);
+  });
+}
+
 // ── 降级：expo-speech 播报 ────────────────────────────────────────────────────
 async function speakFallback(text: string, rate = 0.9, pitch = 1.05) {
   if (Platform.OS === "web" || !text) return;
@@ -77,6 +131,9 @@ export function useExerciseSpeech(enabled = true) {
   const isMountedRef    = useRef(true);
   // 当前正在播放的 player（用于中断）
   const currentPlayerRef = useRef<AudioPlayer | null>(null);
+  const activePlayersRef = useRef<Set<AudioPlayer>>(new Set());
+  const speechQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const speechGenerationRef = useRef(0);
 
   // 初始化：设置音频模式，预加载降级声音
   useEffect(() => {
@@ -86,7 +143,12 @@ export function useExerciseSpeech(enabled = true) {
     return () => {
       isMountedRef.current = false;
       // 停止当前播放
-      try { currentPlayerRef.current?.remove(); } catch {}
+      activePlayersRef.current.forEach(stopPlayer);
+      activePlayersRef.current.clear();
+      stopPlayer(currentPlayerRef.current);
+      currentPlayerRef.current = null;
+      speechQueueRef.current = Promise.resolve();
+      speechGenerationRef.current += 1;
       Speech.stop().catch(() => {});
     };
   }, []);
@@ -95,8 +157,12 @@ export function useExerciseSpeech(enabled = true) {
   const stopSpeech = useCallback(() => {
     if (Platform.OS === "web") return;
     try {
-      currentPlayerRef.current?.remove();
+      speechGenerationRef.current += 1;
+      activePlayersRef.current.forEach(stopPlayer);
+      activePlayersRef.current.clear();
+      stopPlayer(currentPlayerRef.current);
       currentPlayerRef.current = null;
+      speechQueueRef.current = Promise.resolve();
     } catch {}
     Speech.stop().catch(() => {});
   }, []);
@@ -111,29 +177,50 @@ export function useExerciseSpeech(enabled = true) {
   ) => {
     if (!enabled || Platform.OS === "web") return;
     if (interrupt) stopSpeech();
+    const generation = speechGenerationRef.current;
 
-    if (audioKey && AUDIO_MAP[audioKey]) {
-      // 使用预生成高质量音频
-      const player = playAudioKey(audioKey);
-      if (player) {
-        currentPlayerRef.current = player;
-        return;
+    const playTask = async () => {
+      if (!isMountedRef.current) return;
+      if (generation !== speechGenerationRef.current) return;
+
+      if (audioKey && AUDIO_MAP[audioKey]) {
+        // 使用预生成高质量音频
+        const player = playAudioKey(audioKey);
+        if (player) {
+          activePlayersRef.current.add(player);
+          currentPlayerRef.current = player;
+          await waitForPlayerToFinish(player, () => generation !== speechGenerationRef.current || !isMountedRef.current);
+          activePlayersRef.current.delete(player);
+          if (currentPlayerRef.current === player) currentPlayerRef.current = null;
+          return;
+        }
       }
+
+      if (generation !== speechGenerationRef.current) return;
+      // 降级到 expo-speech。expo-speech 无可靠完成事件，这里只保证启动前停止旧 speech。
+      await speakFallback(fallbackText, fallbackRate, fallbackPitch);
+    };
+
+    if (interrupt) {
+      speechQueueRef.current = playTask().catch(() => {});
+      await speechQueueRef.current;
+      return;
     }
-    // 降级到 expo-speech
-    await speakFallback(fallbackText, fallbackRate, fallbackPitch);
+
+    speechQueueRef.current = speechQueueRef.current.then(playTask).catch(() => {});
+    await speechQueueRef.current;
   }, [enabled, stopSpeech]);
 
   // ── 播报动作信息（名称 + 描述） ──────────────────────────────────────────────
   const speakExercise = useCallback((name: string, description: string) => {
     const key = getAudioKey("exercise", name, description);
-    playAudio(key, `${name}。${description}`, true);
+    playAudio(key, `${name}。${description}`);
   }, [playAudio]);
 
   // ── 播报开始提示 ─────────────────────────────────────────────────────────────
   const speakStart = useCallback((courseTitle: string) => {
     const key = getAudioKey("start", courseTitle);
-    playAudio(key, `开始${courseTitle}，请跟随指引进行锻炼。`, true);
+    playAudio(key, `开始${courseTitle}，请跟随指引进行锻炼。`);
   }, [playAudio]);
 
   // ── 播报完成提示 ─────────────────────────────────────────────────────────────
@@ -157,7 +244,8 @@ export function useExerciseSpeech(enabled = true) {
     if (!text) return;
     // 倒计时不中断动作语音，直接叠加播放
     if (key && AUDIO_MAP[key]) {
-      playAudioKey(key);
+      const player = playAudioKey(key);
+      if (player) activePlayersRef.current.add(player);
     } else {
       await speakFallback(text, 1.2, 1.2);
     }

@@ -53,6 +53,8 @@ export default function ExerciseGuideScreen() {
 
   // ── 运动次数 ─────────────────────────────────────────────────────────────────
   const repCountRef = useRef<number>(0);
+  const prevSpokenStepRef = useRef<number | null>(null);
+  const startExerciseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── 陀螺仪 ──────────────────────────────────────────────────────────────────
   const [liveAngles, setLiveAngles] = useState({ pitch: 0, yaw: 0, roll: 0 });
@@ -108,11 +110,19 @@ export default function ExerciseGuideScreen() {
   // ── 新步骤开始时语音播报（已开始锻炼才播） ──────────────────────────────────
   useEffect(() => {
     if (!isStarted || !currentExercise) return;
+    if (prevSpokenStepRef.current === stepIdx) return;
+    prevSpokenStepRef.current = stepIdx;
     speakExercise(
       currentExercise.name,
       currentExercise.description,
     );
   }, [stepIdx, isStarted]);
+
+  useEffect(() => {
+    return () => {
+      if (startExerciseTimerRef.current) clearTimeout(startExerciseTimerRef.current);
+    };
+  }, []);
 
   // ── 倒计时 ticker ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -161,16 +171,19 @@ export default function ExerciseGuideScreen() {
     wallStartRef.current = Date.now();
     accumulatedRef.current = 0;
     repCountRef.current = 0;
+    prevSpokenStepRef.current = stepIdx;
     setIsStarted(true);
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     // 播报开始提示 + 第一个动作
     speakStart(course?.title ?? "");
     if (currentExercise) {
-      setTimeout(() => {
+      if (startExerciseTimerRef.current) clearTimeout(startExerciseTimerRef.current);
+      startExerciseTimerRef.current = setTimeout(() => {
         speakExercise(
           currentExercise.name,
           currentExercise.description,
         );
+        startExerciseTimerRef.current = null;
       }, 1800);
     }
   };
@@ -181,6 +194,10 @@ export default function ExerciseGuideScreen() {
     if (nowPausing) {
       accumulatedRef.current += Date.now() - wallStartRef.current;
       progress.value = withTiming(progress.value, { duration: 0 });
+      if (startExerciseTimerRef.current) {
+        clearTimeout(startExerciseTimerRef.current);
+        startExerciseTimerRef.current = null;
+      }
       stopSpeech();
     } else {
       wallStartRef.current = Date.now();
@@ -301,12 +318,16 @@ export default function ExerciseGuideScreen() {
       {/* ── Nav ── */}
       <View style={[styles.navBar, { borderBottomColor: colors.border }]}>
         <Pressable
-          onPress={() => { stopSpeech(); router.back(); }}
+          onPress={() => {
+            if (startExerciseTimerRef.current) clearTimeout(startExerciseTimerRef.current);
+            stopSpeech();
+            router.back();
+          }}
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
         >
           <IconSymbol name="xmark" size={20} color={colors.muted} />
         </Pressable>
-        <View style={{ alignItems: "center" }}>
+        <View style={styles.navCenter}>
           <Text style={[styles.navTitle, { color: colors.foreground }]}>{course.title}</Text>
           <Text style={[styles.navSub, { color: colors.muted }]}>
             {stepIdx + 1} / {totalSteps}
@@ -511,15 +532,26 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
+    position: "relative",
   },
-  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  navTitle: { fontSize: 15, fontWeight: "700" },
+  backBtn: {
+    position: "absolute",
+    left: 16,
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navCenter: { alignItems: "center", maxWidth: "54%" },
+  navTitle: { fontSize: 15, fontWeight: "700", textAlign: "center" },
   navSub: { fontSize: 12, marginTop: 1 },
   airpodsIndicator: {
+    position: "absolute",
+    right: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
