@@ -129,3 +129,7 @@
 - [x] 新建 lib/audio-map.ts 音频映射表（key → require() 路径）
 - [x] 重写 use-exercise-speech Hook，用 expo-audio 播放预生成音频，降级到 expo-speech
 - [x] 倒计时 3/2/1 改用预生成女声音频
+
+## 新增需求（2026-05-18 EAS 发布修复）
+- [x] 创建 eas.json（配置 appVersionSource、build profiles）
+- [x] app.config.ts 添加 extra.eas.projectId 和 owner 字段

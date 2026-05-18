@@ -125,6 +125,12 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
+  extra: {
+    eas: {
+      projectId: process.env.VITE_APP_ID ?? "WRH22KQc6ihZTrtZjt6NpA",
+    },
+  },
+  owner: "manus",
 };
 
 export default config;
