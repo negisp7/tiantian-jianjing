@@ -137,7 +137,7 @@ export default function CourseDetailScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.gyroTitle, { color: colors.primary }]}>头部运动记录</Text>
             <Text style={[styles.gyroDesc, { color: colors.muted }]}>
-              锻炼时将使用设备陀螺仪记录头部运动角度。若佩戴 AirPods，可获得更精准的头部运动数据。
+              佩戴 AirPods Pro / AirPods Max 开始锻炼，可通过其陀螺仪精确记录俧仰角、居转角等头部运动数据。未佩戴时仅记录锻炼时长和动作次数。
             </Text>
           </View>
         </View>

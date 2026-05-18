@@ -67,7 +67,8 @@ export default function ExerciseGuideScreen() {
 
   // ── 陀螺仪 ──────────────────────────────────────────────────────────────────
   const [liveAngles, setLiveAngles] = useState({ pitch: 0, yaw: 0, roll: 0 });
-  const [airpodsConnected, setAirpodsConnected] = useState(false);
+  // AirPods 连接状态（从我的页面的设置同步，这里仅作展示）
+  const [airpodsConnected] = useState(false);
   const gyroAccum = useRef({ pitch: 0, yaw: 0, roll: 0, maxPitch: 0, maxYaw: 0, maxRoll: 0 });
 
   // ── 语音 & 音效 ──────────────────────────────────────────────────────────────
@@ -324,12 +325,16 @@ export default function ExerciseGuideScreen() {
             {stepIdx + 1} / {totalSteps}
           </Text>
         </View>
-        <Pressable
-          onPress={() => setAirpodsConnected((v) => !v)}
-          style={({ pressed }) => [styles.airpodsBtn, pressed && { opacity: 0.6 }]}
-        >
-          <Text style={{ fontSize: 20 }}>{airpodsConnected ? "🎧" : "🎵"}</Text>
-        </Pressable>
+        <View style={[styles.airpodsIndicator, {
+          backgroundColor: airpodsConnected ? colors.primary + "15" : colors.border + "40",
+        }]}>
+          <Text style={{ fontSize: 14 }}>{airpodsConnected ? "🎧" : "🎵"}</Text>
+          <Text style={[styles.airpodsIndicatorText, {
+            color: airpodsConnected ? colors.primary : colors.muted,
+          }]}>
+            {airpodsConnected ? "已连接" : "未连接"}
+          </Text>
+        </View>
       </View>
 
       {/* ── Progress Bar ── */}
@@ -430,8 +435,15 @@ export default function ExerciseGuideScreen() {
         <View style={styles.gyroHeader}>
           <Text style={styles.gyroIcon}>📡</Text>
           <Text style={[styles.gyroTitle, { color: colors.foreground }]}>
-            头部运动 {airpodsConnected ? "· AirPods" : "· 设备传感器"}
+            头部运动数据
           </Text>
+          {!airpodsConnected && (
+            <View style={[styles.gyroNotice, { backgroundColor: colors.warning + "20" }]}>
+              <Text style={[styles.gyroNoticeText, { color: colors.warning }]}>
+                连接 AirPods 以记录头部运动
+              </Text>
+            </View>
+          )}
         </View>
         <View style={styles.gyroMetrics}>
           {[
@@ -523,7 +535,15 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   navTitle: { fontSize: 15, fontWeight: "700" },
   navSub: { fontSize: 12, marginTop: 1 },
-  airpodsBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  airpodsIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  airpodsIndicatorText: { fontSize: 11, fontWeight: "600" },
   progressTrack: { height: 3 },
   progressFill: { height: 3 },
   statsBar: {
@@ -583,7 +603,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 12,
   },
-  gyroHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  gyroHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" },
+  gyroNotice: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  gyroNoticeText: { fontSize: 10, fontWeight: "500" },
   gyroIcon: { fontSize: 14 },
   gyroTitle: { fontSize: 12, fontWeight: "600" },
   gyroMetrics: { gap: 6 },
