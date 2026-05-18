@@ -123,3 +123,9 @@
 
 ## 新增需求（2026-05-18 第十批）
 - [x] 去掉课程详情页动作卡片中重复的动作名称副标题行
+
+## 新增需求（2026-05-18 语音优化）
+- [x] 用 Microsoft Edge TTS（zh-CN-XiaoxiaoNeural）预生成所有动作语音 MP3（58个文件）
+- [x] 新建 lib/audio-map.ts 音频映射表（key → require() 路径）
+- [x] 重写 use-exercise-speech Hook，用 expo-audio 播放预生成音频，降级到 expo-speech
+- [x] 倒计时 3/2/1 改用预生成女声音频
