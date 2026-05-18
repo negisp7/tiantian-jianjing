@@ -382,9 +382,6 @@ export default function ExerciseGuideScreen() {
         <Text style={[styles.exerciseName, { color: colors.foreground }]}>
           {currentExercise.name}
         </Text>
-        <Text style={[styles.exerciseGuide, { color: colors.muted }]}>
-          {MOTION_GUIDE[currentExercise.motionType]}
-        </Text>
         <Text style={[styles.exerciseDesc, { color: colors.muted }]}>
           {currentExercise.description}
         </Text>
