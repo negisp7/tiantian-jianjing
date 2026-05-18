@@ -125,6 +125,14 @@ export default function CoursesScreen() {
         </Text>
       </View>
 
+      {/* 常驻警示横幅 */}
+      <View style={[styles.warningBanner, { backgroundColor: "#FFF3CD", borderColor: "#F59E0B50" }]}>
+        <Text style={styles.warningIcon}>⚠️</Text>
+        <Text style={[styles.warningText, { color: "#92400E" }]}>
+          如有颈椎疾病史或身体不适，请先和医生确认后再使用。锻炼中出现疼痛加重、头晕或麻木请立即停止。
+        </Text>
+      </View>
+
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
@@ -178,6 +186,17 @@ const styles = StyleSheet.create({
   exChip: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   exIcon: { fontSize: 16 },
   moreText: { fontSize: 12 },
+  warningBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+  },
+  warningIcon: { fontSize: 14, marginTop: 1 },
+  warningText: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: "500" },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",

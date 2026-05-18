@@ -66,6 +66,14 @@ export default function CourseDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 + safeBottom }} showsVerticalScrollIndicator={false}>
+        {/* 常驻警示横幅 */}
+        <View style={[styles.warningBanner, { backgroundColor: "#FFF3CD", borderColor: "#F59E0B50" }]}>
+          <Text style={styles.warningIcon}>⚠️</Text>
+          <Text style={[styles.warningText, { color: "#92400E" }]}>
+            如有颈椎疾病史或身体不适，请先和医生确认后再使用。出现疼痛加重、头晕或麻木请立即停止。
+          </Text>
+        </View>
+
         {/* Hero */}
         <View style={[styles.hero, { backgroundColor: diffColor + "15" }]}>
           <View style={[styles.diffBadge, { backgroundColor: diffColor }]}>
@@ -204,6 +212,16 @@ const styles = StyleSheet.create({
   exDesc: { fontSize: 12, lineHeight: 17 },
   exDuration: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   exDurationText: { fontSize: 13, fontWeight: "600" },
+  warningBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  warningIcon: { fontSize: 14, marginTop: 1 },
+  warningText: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: "500" },
   gyroNotice: {
     flexDirection: "row",
     alignItems: "flex-start",

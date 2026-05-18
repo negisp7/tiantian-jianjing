@@ -1,6 +1,6 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -15,9 +15,35 @@ import {
   initialWindowMetrics,
 } from "react-native-safe-area-context";
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+
+const DISCLAIMER_KEY = "neckcare_disclaimer_accepted";
+
+/** 检查免责声明并在必要时跳转 */
+function DisclaimerGuard() {
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const accepted = await AsyncStorage.getItem(DISCLAIMER_KEY);
+        const inDisclaimer = segments[0] === "disclaimer";
+        if (!accepted && !inDisclaimer) {
+          router.replace("/disclaimer");
+        }
+      } catch {
+        // 读取失败时不强制跳转，避免阻塞用户
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -85,8 +111,10 @@ export default function RootLayout() {
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
+          <DisclaimerGuard />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="disclaimer" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
           <StatusBar style="auto" />
