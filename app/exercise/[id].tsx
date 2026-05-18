@@ -31,17 +31,6 @@ const MOTION_ICONS: Record<string, string> = {
   "rotate-cw": "🔄", "rotate-ccw": "🔃", shoulder: "🙆", static: "🧘",
 };
 
-const MOTION_GUIDE: Record<string, string> = {
-  forward:      "缓慢低头，感受颈后肌群拉伸",
-  backward:     "轻柔仰头，不要过度后仰",
-  left:         "头部向左侧倾斜，右肩保持放松",
-  right:        "头部向右侧倾斜，左肩保持放松",
-  "rotate-cw":  "顺时针缓慢转动头部",
-  "rotate-ccw": "逆时针缓慢转动头部",
-  shoulder:     "双肩放松，配合深呼吸",
-  static:       "保持静止，均匀呼吸",
-};
-
 const MIN_VALID_SECONDS = 30;
 
 export default function ExerciseGuideScreen() {
@@ -121,7 +110,6 @@ export default function ExerciseGuideScreen() {
     if (!isStarted || !currentExercise) return;
     speakExercise(
       currentExercise.name,
-      MOTION_GUIDE[currentExercise.motionType] ?? "",
       currentExercise.description,
     );
   }, [stepIdx, isStarted]);
@@ -181,7 +169,6 @@ export default function ExerciseGuideScreen() {
       setTimeout(() => {
         speakExercise(
           currentExercise.name,
-          MOTION_GUIDE[currentExercise.motionType] ?? "",
           currentExercise.description,
         );
       }, 1800);

@@ -103,10 +103,9 @@ export function useExerciseSpeech(enabled = true) {
   // ── 播报动作信息（名称 + 引导语 + 描述） ────────────────────────────────────
   const speakExercise = useCallback((
     name: string,
-    guide: string,
     description: string,
   ) => {
-    const text = `${name}。${guide}。${description}`;
+    const text = `${name}。${description}`;
     speak(text, true);
   }, [speak]);
 
