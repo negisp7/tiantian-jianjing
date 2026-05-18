@@ -75,7 +75,7 @@ export default function DisclaimerScreen() {
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>📋 关于本应用</Text>
           <Text style={[styles.bodyText, { color: colors.muted }]}>
-            NeckCare Coach 是一款颈椎健康辅助锻炼应用，提供的动作指导仅供参考，{" "}
+            「天天肩颈」是一款肩颈健康辅助锻炼应用，提供的动作指导仅供参考，{" "}
             <Text style={{ color: colors.warning, fontWeight: "700" }}>不构成任何医疗诊断或治疗建议</Text>
             。本应用无法替代专业医疗评估，使用前请确认自身健康状况。
           </Text>

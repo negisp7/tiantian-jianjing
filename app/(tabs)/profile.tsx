@@ -35,7 +35,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 16) + 72;
 
-  const [nickname] = useState("颈椎健康达人");
+  const [nickname] = useState("天天肩颈用户");
   const [airpodsEnabled, setAirpodsEnabled] = useState(false);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [stats, setStats] = useState({ totalDays: 0, totalSeconds: 0, totalSessions: 0 });
