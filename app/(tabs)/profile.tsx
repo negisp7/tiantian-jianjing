@@ -170,52 +170,11 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* 已解锁称号（最多显示 4 个） */}
-          {unlockedTitles.length > 0 ? (
-            <View style={[styles.unlockedGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              {unlockedTitles.slice(0, 4).map((title, idx) => (
-                <View key={title.id}>
-                  {idx > 0 && <View style={[styles.titleDivider, { backgroundColor: colors.border }]} />}
-                  <View style={styles.titleRow}>
-                    <View style={[styles.titleEmojiBox, { backgroundColor: TIER_COLOR[title.tier] + "20" }]}>
-                      <Text style={styles.titleEmoji}>{title.emoji}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={styles.titleNameRow}>
-                        <Text style={[styles.titleName, { color: colors.foreground }]}>{title.name}</Text>
-                        <View style={[styles.tierBadge, { backgroundColor: TIER_COLOR[title.tier] + "20" }]}>
-                          <Text style={[styles.tierBadgeText, { color: TIER_COLOR[title.tier] }]}>
-                            {TIER_LABEL[title.tier]}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={[styles.titleDesc, { color: colors.muted }]}>{title.flavor}</Text>
-                    </View>
-                    <Text style={[styles.titleUnlockedMark, { color: colors.success }]}>✓</Text>
-                  </View>
-                </View>
-              ))}
-              {unlockedTitles.length > 4 && (
-                <Pressable
-                  onPress={() => router.push("/titles")}
-                  style={({ pressed }) => [styles.showMoreBtn, { borderTopColor: colors.border }, pressed && { opacity: 0.7 }]}
-                >
-                  <Text style={[styles.showMoreText, { color: colors.primary }]}>
-                    还有 {unlockedTitles.length - 4} 个已解锁称号 →
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-          ) : (
+          {/* 未解锁时提示 */}
+          {unlockedTitles.length === 0 && (
             <View style={[styles.emptyTitles, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={styles.emptyEmoji}>🔒</Text>
               <Text style={[styles.emptyText, { color: colors.muted }]}>完成第一次锻炼，解锁你的第一个称号！</Text>
-              <Pressable
-                onPress={() => router.push("/titles")}
-                style={({ pressed }) => pressed && { opacity: 0.7 }}
-              >
-                <Text style={[styles.seeAll, { color: colors.primary }]}>查看全部称号 →</Text>
-              </Pressable>
             </View>
           )}
         </View>
