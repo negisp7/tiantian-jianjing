@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, Switch, FlatList,
+  View, Text, Pressable, ScrollView, StyleSheet, Switch,
 } from "react-native";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useColors } from "@/hooks/use-colors";
 import { WorkoutStore } from "@/lib/store/workout-store";
 import { ScreenContainer } from "@/components/screen-container";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ALL_TITLES, getUnlockedTitles, getCurrentTitle, getNextTitle,
   buildTitleStats, type Title,
 } from "@/lib/data/titles";
-
-const NICKNAME_KEY = "@neckcare_nickname";
 
 const TIER_COLOR: Record<Title["tier"], string> = {
   bronze: "#CD7F32",
@@ -32,6 +31,9 @@ const TIER_LABEL: Record<Title["tier"], string> = {
 
 export default function ProfileScreen() {
   const colors = useColors();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 16) + 72;
 
   const [nickname] = useState("颈椎健康达人");
   const [airpodsEnabled, setAirpodsEnabled] = useState(false);
@@ -40,7 +42,6 @@ export default function ProfileScreen() {
   const [titleStats, setTitleStats] = useState(() =>
     buildTitleStats({ totalDays: 0, totalSeconds: 0, totalSessions: 0 }, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   );
-  const [showAllTitles, setShowAllTitles] = useState(false);
 
   const loadData = useCallback(async () => {
     const [s, totalReps, maxAngle, streakInfo, timeSlots, diffCounts] = await Promise.all([
@@ -65,7 +66,6 @@ export default function ProfileScreen() {
   const unlockedTitles = getUnlockedTitles(titleStats);
   const currentTitle = getCurrentTitle(titleStats);
   const nextTitle = getNextTitle(titleStats);
-  const displayTitles = showAllTitles ? ALL_TITLES : ALL_TITLES.slice(0, 8);
 
   const settingRow = (
     icon: string,
@@ -94,7 +94,7 @@ export default function ProfileScreen() {
   return (
     <ScreenContainer containerClassName="bg-primary">
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
         style={{ backgroundColor: colors.background }}
       >
@@ -143,10 +143,11 @@ export default function ProfileScreen() {
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
               称号收集 {unlockedTitles.length}/{ALL_TITLES.length}
             </Text>
-            <Pressable onPress={() => setShowAllTitles((v) => !v)}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>
-                {showAllTitles ? "收起" : "查看全部"}
-              </Text>
+            <Pressable
+              onPress={() => router.push("/titles")}
+              style={({ pressed }) => pressed && { opacity: 0.6 }}
+            >
+              <Text style={[styles.seeAll, { color: colors.primary }]}>查看全部 →</Text>
             </Pressable>
           </View>
 
@@ -169,68 +170,54 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* 称号列表 */}
-          <View style={[styles.titlesGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {displayTitles.map((title, idx) => {
-              const isUnlocked = unlockedTitles.some((u) => u.id === title.id);
-              return (
+          {/* 已解锁称号（最多显示 4 个） */}
+          {unlockedTitles.length > 0 ? (
+            <View style={[styles.unlockedGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {unlockedTitles.slice(0, 4).map((title, idx) => (
                 <View key={title.id}>
                   {idx > 0 && <View style={[styles.titleDivider, { backgroundColor: colors.border }]} />}
-                  <View style={[styles.titleRow, !isUnlocked && styles.titleRowLocked]}>
-                    <View style={[
-                      styles.titleEmojiBox,
-                      {
-                        backgroundColor: isUnlocked
-                          ? TIER_COLOR[title.tier] + "20"
-                          : colors.border + "40",
-                      },
-                    ]}>
-                      <Text style={[styles.titleEmoji, { opacity: isUnlocked ? 1 : 0.3 }]}>
-                        {title.emoji}
-                      </Text>
+                  <View style={styles.titleRow}>
+                    <View style={[styles.titleEmojiBox, { backgroundColor: TIER_COLOR[title.tier] + "20" }]}>
+                      <Text style={styles.titleEmoji}>{title.emoji}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={styles.titleNameRow}>
-                        <Text style={[
-                          styles.titleName,
-                          { color: isUnlocked ? colors.foreground : colors.muted },
-                        ]}>
-                          {isUnlocked ? title.name : "???"}
-                        </Text>
-                        <View style={[
-                          styles.tierBadge,
-                          { backgroundColor: isUnlocked ? TIER_COLOR[title.tier] + "20" : colors.border },
-                        ]}>
-                          <Text style={[
-                            styles.tierBadgeText,
-                            { color: isUnlocked ? TIER_COLOR[title.tier] : colors.muted },
-                          ]}>
+                        <Text style={[styles.titleName, { color: colors.foreground }]}>{title.name}</Text>
+                        <View style={[styles.tierBadge, { backgroundColor: TIER_COLOR[title.tier] + "20" }]}>
+                          <Text style={[styles.tierBadgeText, { color: TIER_COLOR[title.tier] }]}>
                             {TIER_LABEL[title.tier]}
                           </Text>
                         </View>
                       </View>
-                      <Text style={[styles.titleDesc, { color: colors.muted }]}>
-                        {isUnlocked ? title.flavor : title.description}
-                      </Text>
+                      <Text style={[styles.titleDesc, { color: colors.muted }]}>{title.flavor}</Text>
                     </View>
-                    {isUnlocked && (
-                      <Text style={[styles.titleUnlockedMark, { color: colors.success }]}>✓</Text>
-                    )}
+                    <Text style={[styles.titleUnlockedMark, { color: colors.success }]}>✓</Text>
                   </View>
                 </View>
-              );
-            })}
-            {!showAllTitles && ALL_TITLES.length > 8 && (
+              ))}
+              {unlockedTitles.length > 4 && (
+                <Pressable
+                  onPress={() => router.push("/titles")}
+                  style={({ pressed }) => [styles.showMoreBtn, { borderTopColor: colors.border }, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={[styles.showMoreText, { color: colors.primary }]}>
+                    还有 {unlockedTitles.length - 4} 个已解锁称号 →
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <View style={[styles.emptyTitles, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={styles.emptyEmoji}>🔒</Text>
+              <Text style={[styles.emptyText, { color: colors.muted }]}>完成第一次锻炼，解锁你的第一个称号！</Text>
               <Pressable
-                onPress={() => setShowAllTitles(true)}
-                style={[styles.showMoreBtn, { borderTopColor: colors.border }]}
+                onPress={() => router.push("/titles")}
+                style={({ pressed }) => pressed && { opacity: 0.7 }}
               >
-                <Text style={[styles.showMoreText, { color: colors.primary }]}>
-                  还有 {ALL_TITLES.length - 8} 个称号待探索 →
-                </Text>
+                <Text style={[styles.seeAll, { color: colors.primary }]}>查看全部称号 →</Text>
               </Pressable>
-            )}
-          </View>
+            </View>
+          )}
         </View>
 
         {/* ── AirPods Status ── */}
@@ -330,7 +317,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   avatarEmoji: { fontSize: 36 },
-  nicknameText: { fontSize: 20, fontWeight: "700", color: "#fff" },
+  nicknameText: { fontSize: 20, fontWeight: "700", color: "#fff", marginBottom: 8 },
   currentTitleBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -338,129 +325,144 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    marginTop: 8,
+    marginBottom: 6,
   },
-  currentTitleTier: { fontSize: 11, fontWeight: "800" },
+  currentTitleTier: { fontSize: 12, fontWeight: "800" },
   currentTitleName: { fontSize: 14, fontWeight: "700", color: "#fff" },
-  currentTitleFlavor: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.75)",
-    marginTop: 6,
-    textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 16,
+  currentTitleFlavor: { fontSize: 12, color: "rgba(255,255,255,0.75)", textAlign: "center" },
+  sectionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
-  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
-  sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: "700" },
   seeAll: { fontSize: 14, fontWeight: "500" },
   statsCard: {
     flexDirection: "row",
     borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
-    justifyContent: "space-around",
+    overflow: "hidden",
   },
-  statItem: { alignItems: "center" },
-  statNum: { fontSize: 26, fontWeight: "800" },
+  statItem: { flex: 1, alignItems: "center", paddingVertical: 16 },
+  statNum: { fontSize: 24, fontWeight: "800" },
   statLabel: { fontSize: 11, marginTop: 2 },
-  statDivider: { width: 1, height: 40, alignSelf: "center" },
-
-  // 称号系统
+  statDivider: { width: 1 },
   nextTitleCard: {
     borderRadius: 14,
-    padding: 14,
     borderWidth: 1,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
+    gap: 8,
   },
-  nextTitleLabel: { fontSize: 12, color: "#FF9500", fontWeight: "600", marginBottom: 8 },
+  nextTitleLabel: { fontSize: 12, color: "#888", fontWeight: "500" },
   nextTitleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   nextTitleEmoji: { fontSize: 28 },
-  nextTitleName: { fontSize: 15, fontWeight: "700" },
-  nextTitleDesc: { fontSize: 12, marginTop: 2 },
-  titlesGrid: {
+  nextTitleName: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  nextTitleDesc: { fontSize: 12, lineHeight: 17 },
+  tierBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  tierBadgeText: { fontSize: 11, fontWeight: "700" },
+  unlockedGrid: {
     borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",
   },
+  titleDivider: { height: 0.5, marginHorizontal: 16 },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
     gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
   },
-  titleRowLocked: { opacity: 0.55 },
-  titleDivider: { height: 1, marginHorizontal: 14 },
   titleEmojiBox: {
-    width: 44, height: 44, borderRadius: 12,
+    width: 42, height: 42, borderRadius: 11,
     alignItems: "center", justifyContent: "center",
   },
-  titleEmoji: { fontSize: 22 },
-  titleNameRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
-  titleName: { fontSize: 14, fontWeight: "700" },
-  titleDesc: { fontSize: 11, lineHeight: 16 },
-  titleUnlockedMark: { fontSize: 16, fontWeight: "800" },
-  tierBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  tierBadgeText: { fontSize: 10, fontWeight: "800" },
+  titleEmoji: { fontSize: 20 },
+  titleNameRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
+  titleName: { fontSize: 14, fontWeight: "600", flex: 1 },
+  titleDesc: { fontSize: 12, lineHeight: 17 },
+  titleUnlockedMark: { fontSize: 15, fontWeight: "700", marginLeft: 4 },
   showMoreBtn: {
-    paddingVertical: 14,
     alignItems: "center",
-    borderTopWidth: 1,
+    paddingVertical: 13,
+    borderTopWidth: 0.5,
   },
-  showMoreText: { fontSize: 13, fontWeight: "600" },
-
-  // AirPods
-  airpodsCard: { borderRadius: 16, padding: 14, borderWidth: 1 },
-  airpodsTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  showMoreText: { fontSize: 13, fontWeight: "500" },
+  emptyTitles: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: "center",
+    gap: 8,
+  },
+  emptyEmoji: { fontSize: 32 },
+  emptyText: { fontSize: 13, textAlign: "center", lineHeight: 19 },
+  airpodsCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  airpodsTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 12,
+  },
   airpodsIcon: { fontSize: 28 },
-  airpodsTitle: { fontSize: 15, fontWeight: "600" },
-  airpodsDesc: { fontSize: 12, marginTop: 2, lineHeight: 17 },
-  airpodsFeatures: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, gap: 6 },
-  featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  featureCheck: { fontSize: 14, fontWeight: "700" },
+  airpodsTitle: { fontSize: 15, fontWeight: "600", marginBottom: 2 },
+  airpodsDesc: { fontSize: 12, lineHeight: 17 },
+  airpodsFeatures: {
+    borderTopWidth: 0.5,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  featureCheck: { fontSize: 14, fontWeight: "700", width: 16 },
   featureText: { fontSize: 13 },
-
-  // Settings
-  settingsCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+  settingsCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
   settingRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
   },
   settingLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   settingIcon: { fontSize: 20 },
   settingLabel: { fontSize: 15, fontWeight: "500" },
-  settingDesc: { fontSize: 12, marginTop: 1 },
-
-  // About
-  aboutCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+  settingDesc: { fontSize: 12, marginTop: 2 },
+  aboutCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
   aboutRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 13,
   },
   aboutLabel: { fontSize: 14 },
   aboutValue: { fontSize: 14, fontWeight: "500" },
-  aboutDivider: { height: 1, marginHorizontal: 16 },
-
-  // Disclaimer
+  aboutDivider: { height: 0.5, marginHorizontal: 16 },
   disclaimer: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
     margin: 16,
+    marginTop: 20,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
+    gap: 10,
   },
   disclaimerIcon: { fontSize: 16 },
   disclaimerText: { flex: 1, fontSize: 12, lineHeight: 18 },
