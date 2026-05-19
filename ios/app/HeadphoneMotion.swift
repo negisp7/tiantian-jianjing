@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreMotion
 import Foundation
 import React
@@ -8,12 +9,28 @@ class HeadphoneMotion: RCTEventEmitter, CMHeadphoneMotionManagerDelegate {
   private let queue = OperationQueue()
   private var hasListeners = false
   private var activeSessionCount = 0
+  private let headphonePortTypes: Set<AVAudioSession.Port> = [
+    .bluetoothA2DP,
+    .bluetoothHFP,
+    .bluetoothLE,
+    .headphones,
+  ]
 
   override init() {
     super.init()
     manager.delegate = self
     queue.name = "HeadphoneMotionQueue"
     queue.qualityOfService = .userInteractive
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleRouteChange),
+      name: AVAudioSession.routeChangeNotification,
+      object: AVAudioSession.sharedInstance()
+    )
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
   }
 
   override static func requiresMainQueueSetup() -> Bool {
@@ -21,7 +38,7 @@ class HeadphoneMotion: RCTEventEmitter, CMHeadphoneMotionManagerDelegate {
   }
 
   override func supportedEvents() -> [String]! {
-    ["HeadphoneMotionUpdate", "HeadphoneMotionAvailabilityChanged"]
+    ["HeadphoneMotionUpdate", "HeadphoneMotionAvailabilityChanged", "HeadphoneWearStateChanged"]
   }
 
   override func startObserving() {
@@ -35,6 +52,11 @@ class HeadphoneMotion: RCTEventEmitter, CMHeadphoneMotionManagerDelegate {
   @objc
   func isAvailable(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
     resolve(manager.isDeviceMotionAvailable)
+  }
+
+  @objc
+  func isWorn(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
+    resolve(isHeadphoneAudioRouteActive())
   }
 
   @objc
@@ -73,10 +95,12 @@ class HeadphoneMotion: RCTEventEmitter, CMHeadphoneMotionManagerDelegate {
 
   func headphoneMotionManagerDidConnect(_ manager: CMHeadphoneMotionManager) {
     sendAvailability(manager.isDeviceMotionAvailable)
+    sendWearState()
   }
 
   func headphoneMotionManagerDidDisconnect(_ manager: CMHeadphoneMotionManager) {
     sendAvailability(false)
+    sendWearState()
   }
 
   private func sendAvailability(_ available: Bool) {
@@ -84,6 +108,24 @@ class HeadphoneMotion: RCTEventEmitter, CMHeadphoneMotionManagerDelegate {
     sendToReact(name: "HeadphoneMotionAvailabilityChanged", body: [
       "available": available,
     ])
+  }
+
+  @objc
+  private func handleRouteChange() {
+    sendWearState()
+  }
+
+  private func sendWearState() {
+    guard hasListeners else { return }
+    sendToReact(name: "HeadphoneWearStateChanged", body: [
+      "worn": isHeadphoneAudioRouteActive(),
+    ])
+  }
+
+  private func isHeadphoneAudioRouteActive() -> Bool {
+    AVAudioSession.sharedInstance().currentRoute.outputs.contains { output in
+      headphonePortTypes.contains(output.portType)
+    }
   }
 
   private func sendToReact(name: String, body: [String: Any]) {

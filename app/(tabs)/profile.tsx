@@ -99,7 +99,7 @@ export default function ProfileScreen() {
       <ScrollView
         contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: colors.background }}
+        style={{ backgroundColor: colors.primary }}
       >
         {/* ── Header ── */}
         <View style={[styles.header, { backgroundColor: colors.primary }]}>
@@ -117,8 +117,9 @@ export default function ProfileScreen() {
           <Text style={styles.currentTitleFlavor}>{currentTitle.flavor}</Text>
         </View>
 
+        <View style={[styles.content, { backgroundColor: colors.background }]}>
         {/* ── Stats ── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>累计数据</Text>
           <View style={[styles.statsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.statItem}>
@@ -193,12 +194,12 @@ export default function ProfileScreen() {
               <Text style={styles.airpodsIcon}>{airpodsEnabled ? "🎧" : "🎵"}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.airpodsTitle, { color: colors.foreground }]}>
-                  {airpodsEnabled ? "AirPods 已连接" : "未检测到 AirPods"}
+                  {airpodsEnabled ? "AirPods 佩戴中" : "未检测到佩戴状态"}
                 </Text>
                 <Text style={[styles.airpodsDesc, { color: colors.muted }]}>
                   {airpodsEnabled
-                    ? "将使用 AirPods 陀螺仪记录精准头部运动数据"
-                    : "连接 AirPods Pro 或 AirPods Max 以获得精准运动追踪"}
+                    ? "将使用 AirPods 头动传感器记录精准头部运动数据"
+                    : "戴上支持头动的 AirPods 以获得精准运动追踪"}
                 </Text>
               </View>
               <Switch
@@ -226,7 +227,7 @@ export default function ProfileScreen() {
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>设置</Text>
           <View style={[styles.settingsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {settingRow("🔔", "每日锻炼提醒", notifyEnabled, setNotifyEnabled, "每天提醒你进行颈椎锻炼")}
-            {settingRow("🎧", "AirPods 运动追踪", airpodsEnabled, () => {}, "根据耳机连接状态自动切换", true)}
+            {settingRow("🎧", "AirPods 运动追踪", airpodsEnabled, () => {}, "根据耳机佩戴状态自动切换", true)}
           </View>
         </View>
 
@@ -259,6 +260,7 @@ export default function ProfileScreen() {
             本应用仅供辅助锻炼参考，不构成医疗建议。如有严重颈椎问题，请咨询专业医生。
           </Text>
         </View>
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
@@ -271,6 +273,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+  },
+  content: {
+    flex: 1,
+    marginTop: -24,
+    paddingTop: 24,
   },
   avatarContainer: {
     width: 72, height: 72, borderRadius: 36,

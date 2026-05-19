@@ -62,7 +62,7 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: colors.background }}
+        style={{ backgroundColor: colors.primary }}
       >
         {/* ── Header ── */}
         <View style={[styles.header, { backgroundColor: colors.primary }]}>
@@ -76,8 +76,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <View style={[styles.content, { backgroundColor: colors.background }]}>
         {/* ── Daily Tip Card ── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>每日健康贴士</Text>
           <Pressable
             onPress={handleTipNext}
@@ -181,6 +182,7 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </View>
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
@@ -196,6 +198,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+  },
+  content: {
+    flex: 1,
+    marginTop: -24,
+    paddingTop: 24,
   },
   greetingText: { fontSize: 22, fontWeight: "700", color: "#fff" },
   dateText: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 2 },

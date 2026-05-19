@@ -9,6 +9,7 @@ type HeadphoneMotionSample = {
 
 type HeadphoneMotionModule = {
   isAvailable: () => Promise<boolean>;
+  isWorn: () => Promise<boolean>;
   startUpdates: () => void;
   stopUpdates: () => void;
 };
@@ -43,14 +44,20 @@ export function useHeadphoneMotion(enabled: boolean) {
     const availabilitySub = emitter.addListener(
       "HeadphoneMotionAvailabilityChanged",
       (event: { available: boolean }) => {
-        if (mounted) setAvailable(Boolean(event.available));
+        if (mounted && !event.available) setAvailable(false);
+      },
+    );
+    const wearSub = emitter.addListener(
+      "HeadphoneWearStateChanged",
+      (event: { worn: boolean }) => {
+        if (mounted) setAvailable(Boolean(event.worn));
       },
     );
 
-    nativeModule.isAvailable()
-      .then((isAvailable) => {
-        if (mounted) setAvailable(isAvailable);
-        nativeModule.startUpdates();
+    Promise.all([nativeModule.isAvailable(), nativeModule.isWorn()])
+      .then(([isAvailable, isWorn]) => {
+        if (mounted) setAvailable(Boolean(isAvailable && isWorn));
+        if (isAvailable) nativeModule.startUpdates();
       })
       .catch(() => {
         if (mounted) setAvailable(false);
@@ -60,6 +67,7 @@ export function useHeadphoneMotion(enabled: boolean) {
       mounted = false;
       motionSub.remove();
       availabilitySub.remove();
+      wearSub.remove();
       nativeModule.stopUpdates();
       setLiveAngles({ pitch: 0, yaw: 0, roll: 0 });
     };
