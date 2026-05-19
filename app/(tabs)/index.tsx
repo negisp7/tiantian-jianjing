@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  ScrollView, Text, View, Pressable, FlatList,
+  ScrollView, Text, View, Pressable,
   StyleSheet, Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
@@ -16,8 +17,16 @@ import { DailyTip } from "@/lib/types";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const DIFFICULTY_LABEL: Record<string, string> = { light: "轻度", moderate: "中度", intense: "重度" };
-const DIFFICULTY_COLOR: Record<string, string> = { light: "#34C759", moderate: "#FF9500", intense: "#FF3B30" };
+const DIFFICULTY_COLOR: Record<string, string> = { light: "#4ECBA0", moderate: "#FFB347", intense: "#FF6B8A" };
+const DIFFICULTY_BG: Record<string, string> = { light: "#E8F9F4", moderate: "#FFF4E0", intense: "#FFE8ED" };
+const DIFFICULTY_ICON: Record<string, string> = { light: "🌿", moderate: "🔥", intense: "💪" };
 const WEEK_DAYS = ["日", "一", "二", "三", "四", "五", "六"];
+
+const GREETING_ICONS: Record<string, string> = {
+  morning: "🌸",
+  afternoon: "☀️",
+  evening: "🌙",
+};
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -28,7 +37,9 @@ export default function HomeScreen() {
   const [totalStats, setTotalStats] = useState({ totalDays: 0, totalSeconds: 0, totalSessions: 0 });
 
   const today = new Date();
-  const greeting = today.getHours() < 12 ? "早上好" : today.getHours() < 18 ? "下午好" : "晚上好";
+  const hour = today.getHours();
+  const greetingKey = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  const greeting = hour < 12 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
   const dateStr = `${today.getMonth() + 1}月${today.getDate()}日`;
   const weekDayStr = `星期${"日一二三四五六"[today.getDay()]}`;
 
@@ -55,133 +66,194 @@ export default function HomeScreen() {
   };
 
   const maxWeek = Math.max(...weekData, 1);
-  const todayCourses = COURSES.slice(0, 2);
+  const todayCourses = COURSES.slice(0, 3);
 
   return (
-    <ScreenContainer containerClassName="bg-primary">
+    <ScreenContainer containerClassName="bg-background" edges={["top", "left", "right"]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: colors.primary }}
       >
-        {/* ── Header ── */}
-        <View style={[styles.header, { backgroundColor: colors.primary }]}>
-          <View>
-            <Text style={styles.greetingText}>{greeting} 👋</Text>
-            <Text style={styles.dateText}>{dateStr} · {weekDayStr}</Text>
-          </View>
-          <View style={styles.headerStats}>
-            <Text style={styles.headerStatNum}>{totalStats.totalDays}</Text>
-            <Text style={styles.headerStatLabel}>坚持天数</Text>
-          </View>
-        </View>
+        {/* ── Gradient Header ── */}
+        <LinearGradient
+          colors={["#FF6B8A", "#FF9BAD", "#FFB8C6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          {/* 装饰气泡 */}
+          <View style={[styles.bubble, styles.bubble1]} />
+          <View style={[styles.bubble, styles.bubble2]} />
+          <View style={[styles.bubble, styles.bubble3]} />
 
+          <View style={styles.headerContent}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.greetingRow}>
+                <Text style={styles.greetingIcon}>{GREETING_ICONS[greetingKey]}</Text>
+                <Text style={styles.greetingText}>{greeting}！</Text>
+              </View>
+              <Text style={styles.dateText}>{dateStr} · {weekDayStr}</Text>
+              <Text style={styles.motivationText}>
+                {totalStats.totalDays === 0
+                  ? "开始你的颈椎健康之旅吧 ✨"
+                  : `已坚持 ${totalStats.totalDays} 天，继续加油！🎉`}
+              </Text>
+            </View>
+            <View style={styles.streakBadge}>
+              <Text style={styles.streakNum}>{totalStats.totalDays}</Text>
+              <Text style={styles.streakLabel}>天</Text>
+              <Text style={styles.streakSub}>连续打卡</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* ── Content Area ── */}
         <View style={[styles.content, { backgroundColor: colors.background }]}>
-        {/* ── Daily Tip Card ── */}
-        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>每日健康贴士</Text>
-          <Pressable
-            onPress={handleTipNext}
-            style={({ pressed }) => [
-              styles.tipCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <View style={styles.tipHeader}>
-              <Text style={styles.tipIcon}>{todayTip.icon}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.tipTitle, { color: colors.foreground }]}>{todayTip.title}</Text>
-                <Text style={[styles.tipCategory, { color: colors.primary }]}>
-                  {todayTip.category === "posture" ? "姿势" :
-                   todayTip.category === "exercise" ? "锻炼" :
-                   todayTip.category === "lifestyle" ? "生活方式" : "科学知识"}
-                </Text>
-              </View>
-              <Text style={[styles.tipSwipe, { color: colors.muted }]}>点击换一条 →</Text>
-            </View>
-            <Text style={[styles.tipContent, { color: colors.muted }]}>{todayTip.content}</Text>
-          </Pressable>
-        </View>
 
-        {/* ── This Week ── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>本周锻炼</Text>
-          <View style={[styles.weekCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.weekBars}>
-              {weekData.map((sec, i) => {
-                const isToday = i === today.getDay();
-                const barH = Math.max(4, (sec / maxWeek) * 56);
-                return (
-                  <View key={i} style={styles.weekBarCol}>
-                    <View style={[
-                      styles.weekBar,
-                      { height: barH, backgroundColor: isToday ? colors.primary : colors.border },
-                    ]} />
-                    <Text style={[styles.weekDayLabel, { color: isToday ? colors.primary : colors.muted }]}>
-                      {WEEK_DAYS[i]}
-                    </Text>
-                  </View>
-                );
-              })}
+          {/* ── This Week Chart ── */}
+          <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionEmoji}>📊</Text>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>本周锻炼</Text>
             </View>
-            <View style={[styles.weekDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.weekStatsRow}>
-              <View style={styles.weekStatItem}>
-                <Text style={[styles.weekStatNum, { color: colors.foreground }]}>{totalStats.totalSessions}</Text>
-                <Text style={[styles.weekStatLabel, { color: colors.muted }]}>总次数</Text>
+            <View style={[styles.weekCard, { backgroundColor: colors.surface, shadowColor: colors.primary }]}>
+              <View style={styles.weekBars}>
+                {weekData.map((sec, i) => {
+                  const isToday = i === today.getDay();
+                  const hasData = sec > 0;
+                  const barH = Math.max(6, (sec / maxWeek) * 60);
+                  return (
+                    <View key={i} style={styles.weekBarCol}>
+                      <View style={[
+                        styles.weekBarBg,
+                        { backgroundColor: colors.border },
+                      ]}>
+                        <View style={[
+                          styles.weekBarFill,
+                          {
+                            height: barH,
+                            backgroundColor: isToday ? "#FF6B8A" : hasData ? "#FFB8C6" : colors.border,
+                          },
+                        ]} />
+                      </View>
+                      <View style={[
+                        styles.weekDayDot,
+                        { backgroundColor: isToday ? "#FF6B8A" : "transparent" },
+                      ]} />
+                      <Text style={[
+                        styles.weekDayLabel,
+                        { color: isToday ? "#FF6B8A" : colors.muted, fontWeight: isToday ? "700" : "400" },
+                      ]}>
+                        {WEEK_DAYS[i]}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
-              <View style={[styles.weekStatDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.weekStatItem}>
-                <Text style={[styles.weekStatNum, { color: colors.foreground }]}>
-                  {Math.round(totalStats.totalSeconds / 60)}
-                </Text>
-                <Text style={[styles.weekStatLabel, { color: colors.muted }]}>总分钟</Text>
-              </View>
-              <View style={[styles.weekStatDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.weekStatItem}>
-                <Text style={[styles.weekStatNum, { color: colors.foreground }]}>{totalStats.totalDays}</Text>
-                <Text style={[styles.weekStatLabel, { color: colors.muted }]}>坚持天</Text>
+              <View style={[styles.weekDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.weekStatsRow}>
+                {[
+                  { num: totalStats.totalSessions, label: "总次数", icon: "🏃" },
+                  { num: Math.round(totalStats.totalSeconds / 60), label: "总分钟", icon: "⏱️" },
+                  { num: totalStats.totalDays, label: "坚持天", icon: "🔥" },
+                ].map((item, idx) => (
+                  <React.Fragment key={idx}>
+                    {idx > 0 && <View style={[styles.weekStatDivider, { backgroundColor: colors.border }]} />}
+                    <View style={styles.weekStatItem}>
+                      <Text style={styles.weekStatIcon}>{item.icon}</Text>
+                      <Text style={[styles.weekStatNum, { color: colors.foreground }]}>{item.num}</Text>
+                      <Text style={[styles.weekStatLabel, { color: colors.muted }]}>{item.label}</Text>
+                    </View>
+                  </React.Fragment>
+                ))}
               </View>
             </View>
           </View>
-        </View>
 
-        {/* ── Recommended Courses ── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>推荐课程</Text>
-            <Pressable onPress={() => router.push("/(tabs)/courses")}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>查看全部</Text>
-            </Pressable>
-          </View>
-          {todayCourses.map((course) => (
+          {/* ── Daily Tip Card ── */}
+          <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionEmoji}>💡</Text>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>每日健康贴士</Text>
+            </View>
             <Pressable
-              key={course.id}
-              onPress={() => handleStartCourse(course.id)}
+              onPress={handleTipNext}
               style={({ pressed }) => [
-                styles.courseCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                pressed && { opacity: 0.85 },
+                styles.tipCard,
+                { backgroundColor: "#FFF0F3", borderColor: "#FFD6DF" },
+                pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
               ]}
             >
-              <View style={styles.courseCardLeft}>
-                <View style={[styles.diffBadge, { backgroundColor: DIFFICULTY_COLOR[course.difficulty] + "20" }]}>
-                  <Text style={[styles.diffBadgeText, { color: DIFFICULTY_COLOR[course.difficulty] }]}>
-                    {DIFFICULTY_LABEL[course.difficulty]}
+              <View style={styles.tipHeader}>
+                <View style={styles.tipIconWrap}>
+                  <Text style={styles.tipIcon}>{todayTip.icon}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.tipTitle, { color: "#2D1B24" }]}>{todayTip.title}</Text>
+                  <View style={styles.tipCategoryBadge}>
+                    <Text style={styles.tipCategoryText}>
+                      {todayTip.category === "posture" ? "🧍 姿势" :
+                       todayTip.category === "exercise" ? "🏃 锻炼" :
+                       todayTip.category === "lifestyle" ? "🌿 生活" : "🔬 科学"}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.tipSwipe, { color: "#FF9BAD" }]}>换一条 →</Text>
+              </View>
+              <Text style={[styles.tipContent, { color: "#7A5060" }]}>{todayTip.content}</Text>
+            </Pressable>
+          </View>
+
+          {/* ── Recommended Courses ── */}
+          <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+            <View style={styles.sectionRow}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={styles.sectionEmoji}>🎯</Text>
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>推荐课程</Text>
+              </View>
+              <Pressable
+                onPress={() => router.push("/(tabs)/courses")}
+                style={({ pressed }) => [styles.seeAllBtn, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={styles.seeAllText}>查看全部 →</Text>
+              </Pressable>
+            </View>
+            {todayCourses.map((course) => (
+              <Pressable
+                key={course.id}
+                onPress={() => handleStartCourse(course.id)}
+                style={({ pressed }) => [
+                  styles.courseCard,
+                  { backgroundColor: colors.surface, shadowColor: colors.primary },
+                  pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+                ]}
+              >
+                {/* 左侧彩色竖条 */}
+                <View style={[styles.courseAccent, { backgroundColor: DIFFICULTY_COLOR[course.difficulty] }]} />
+                <View style={styles.courseCardBody}>
+                  <View style={styles.courseCardTop}>
+                    <View style={[styles.diffBadge, { backgroundColor: DIFFICULTY_BG[course.difficulty] }]}>
+                      <Text style={styles.diffBadgeIcon}>{DIFFICULTY_ICON[course.difficulty]}</Text>
+                      <Text style={[styles.diffBadgeText, { color: DIFFICULTY_COLOR[course.difficulty] }]}>
+                        {DIFFICULTY_LABEL[course.difficulty]}
+                      </Text>
+                    </View>
+                    <Text style={[styles.courseDuration, { color: colors.muted }]}>
+                      ⏱ {course.durationMinutes} 分钟
+                    </Text>
+                  </View>
+                  <Text style={[styles.courseTitle, { color: colors.foreground }]}>{course.title}</Text>
+                  <Text style={[styles.courseMeta, { color: colors.muted }]} numberOfLines={1}>
+                    {course.exercises.length} 个动作 · {course.description.slice(0, 20)}…
                   </Text>
                 </View>
-                <Text style={[styles.courseTitle, { color: colors.foreground }]}>{course.title}</Text>
-                <Text style={[styles.courseMeta, { color: colors.muted }]}>
-                  {course.durationMinutes} 分钟 · {course.exercises.length} 个动作
-                </Text>
-              </View>
-              <View style={[styles.startBtn, { backgroundColor: colors.primary }]}>
-                <Text style={styles.startBtnText}>开始</Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
+                <View style={[styles.startBtn, { backgroundColor: DIFFICULTY_COLOR[course.difficulty] }]}>
+                  <Text style={styles.startBtnText}>开始</Text>
+                  <Text style={styles.startBtnArrow}>›</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </ScreenContainer>
@@ -191,61 +263,149 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
+    overflow: "hidden",
+    position: "relative",
   },
+  bubble: {
+    position: "absolute",
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.15)",
+  },
+  bubble1: { width: 80, height: 80, top: -20, right: 60 },
+  bubble2: { width: 50, height: 50, top: 30, right: 20 },
+  bubble3: { width: 120, height: 120, top: -40, right: -30 },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    position: "relative",
+    zIndex: 1,
+  },
+  greetingRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
+  greetingIcon: { fontSize: 22 },
+  greetingText: { fontSize: 22, fontWeight: "800", color: "#fff" },
+  dateText: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginBottom: 6 },
+  motivationText: { fontSize: 13, color: "rgba(255,255,255,0.9)", fontWeight: "500" },
+  streakBadge: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 72,
+  },
+  streakNum: { fontSize: 30, fontWeight: "900", color: "#fff", lineHeight: 34 },
+  streakLabel: { fontSize: 16, fontWeight: "700", color: "#fff", lineHeight: 18 },
+  streakSub: { fontSize: 10, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   content: {
     flex: 1,
-    marginTop: -24,
-    paddingTop: 24,
+    marginTop: -20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 4,
   },
-  greetingText: { fontSize: 22, fontWeight: "700", color: "#fff" },
-  dateText: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 2 },
-  headerStats: { alignItems: "center" },
-  headerStatNum: { fontSize: 28, fontWeight: "800", color: "#fff" },
-  headerStatLabel: { fontSize: 11, color: "rgba(255,255,255,0.8)" },
-  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 10 },
-  sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  seeAll: { fontSize: 14, fontWeight: "500" },
-  tipCard: {
-    borderRadius: 16, padding: 16, borderWidth: 1,
-    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
-  tipHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 8 },
-  tipIcon: { fontSize: 28 },
-  tipTitle: { fontSize: 15, fontWeight: "600" },
-  tipCategory: { fontSize: 12, marginTop: 2 },
-  tipSwipe: { fontSize: 11, marginTop: 2 },
-  tipContent: { fontSize: 14, lineHeight: 21 },
+  sectionEmoji: { fontSize: 18, marginRight: 6 },
+  sectionTitle: { fontSize: 17, fontWeight: "700" },
+  seeAllBtn: {
+    backgroundColor: "#FFE8ED",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  seeAllText: { fontSize: 13, color: "#FF6B8A", fontWeight: "600" },
+  // Week card
   weekCard: {
-    borderRadius: 16, padding: 16, borderWidth: 1,
-    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    borderRadius: 20,
+    padding: 16,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  weekBars: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", height: 72 },
+  weekBars: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", height: 80 },
   weekBarCol: { alignItems: "center", flex: 1, gap: 4 },
-  weekBar: { width: 20, borderRadius: 6 },
+  weekBarBg: { width: 18, height: 60, borderRadius: 9, justifyContent: "flex-end", overflow: "hidden" },
+  weekBarFill: { width: "100%", borderRadius: 9 },
+  weekDayDot: { width: 5, height: 5, borderRadius: 3 },
   weekDayLabel: { fontSize: 11 },
   weekDivider: { height: 1, marginVertical: 12 },
   weekStatsRow: { flexDirection: "row", justifyContent: "space-around" },
-  weekStatItem: { alignItems: "center" },
-  weekStatNum: { fontSize: 20, fontWeight: "700" },
-  weekStatLabel: { fontSize: 11, marginTop: 2 },
-  weekStatDivider: { width: 1, height: 32, alignSelf: "center" },
-  courseCard: {
-    borderRadius: 16, padding: 16, borderWidth: 1, marginBottom: 12,
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+  weekStatItem: { alignItems: "center", gap: 2 },
+  weekStatIcon: { fontSize: 16 },
+  weekStatNum: { fontSize: 20, fontWeight: "800" },
+  weekStatLabel: { fontSize: 11 },
+  weekStatDivider: { width: 1, height: 36, alignSelf: "center" },
+  // Tip card
+  tipCard: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.5,
   },
-  courseCardLeft: { flex: 1, gap: 4 },
-  diffBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  diffBadgeText: { fontSize: 11, fontWeight: "600" },
-  courseTitle: { fontSize: 16, fontWeight: "600" },
-  courseMeta: { fontSize: 13 },
-  startBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginLeft: 12 },
-  startBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  tipHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 10 },
+  tipIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,107,138,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tipIcon: { fontSize: 26 },
+  tipTitle: { fontSize: 15, fontWeight: "700", marginBottom: 4 },
+  tipCategoryBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,107,138,0.12)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  tipCategoryText: { fontSize: 11, color: "#FF6B8A", fontWeight: "600" },
+  tipSwipe: { fontSize: 11, fontWeight: "500", marginTop: 2 },
+  tipContent: { fontSize: 14, lineHeight: 22 },
+  // Course card
+  courseCard: {
+    borderRadius: 20,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    overflow: "hidden",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  courseAccent: { width: 5, alignSelf: "stretch" },
+  courseCardBody: { flex: 1, padding: 14, gap: 5 },
+  courseCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  diffBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  diffBadgeIcon: { fontSize: 12 },
+  diffBadgeText: { fontSize: 11, fontWeight: "700" },
+  courseDuration: { fontSize: 12 },
+  courseTitle: { fontSize: 15, fontWeight: "700" },
+  courseMeta: { fontSize: 12 },
+  startBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "stretch",
+    minWidth: 56,
+  },
+  startBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  startBtnArrow: { color: "rgba(255,255,255,0.8)", fontSize: 18, lineHeight: 20 },
 });

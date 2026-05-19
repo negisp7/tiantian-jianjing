@@ -10,4 +10,6 @@ export declare const themeColors: {
   error:      { light: string; dark: string };
   accent:     { light: string; dark: string };
   tint:       { light: string; dark: string };
+  mint:       { light: string; dark: string };
+  peach:      { light: string; dark: string };
 };
