@@ -139,13 +139,13 @@ export default function CourseDetailScreen() {
           ))}
         </View>
 
-        {/* Gyroscope Notice */}
+        {/* AirPods Motion Notice */}
         <View style={[styles.gyroNotice, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}>
           <Text style={styles.gyroIcon}>🎧</Text>
           <View style={{ flex: 1 }}>
             <Text style={[styles.gyroTitle, { color: colors.primary }]}>头部运动记录</Text>
             <Text style={[styles.gyroDesc, { color: colors.muted }]}>
-              佩戴 AirPods Pro / AirPods Max 开始锻炼，可通过其陀螺仪精确记录俧仰角、居转角等头部运动数据。未佩戴时仅记录锻炼时长和动作次数。
+              佩戴支持头部运动的 AirPods 开始锻炼，可通过耳机传感器记录俯仰角、偏转角等头部运动数据。未佩戴时仅记录锻炼时长和动作次数。
             </Text>
           </View>
         </View>

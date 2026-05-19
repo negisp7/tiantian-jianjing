@@ -17,12 +17,7 @@ import { WorkoutStore } from "@/lib/store/workout-store";
 import { MotionData, WorkoutRecord } from "@/lib/types";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useExerciseSpeech } from "@/hooks/use-exercise-speech";
-
-// Gyroscope (only on native)
-let Gyroscope: any = null;
-if (Platform.OS !== "web") {
-  try { Gyroscope = require("expo-sensors").Gyroscope; } catch {}
-}
+import { useHeadphoneMotion } from "@/hooks/use-headphone-motion";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -56,11 +51,13 @@ export default function ExerciseGuideScreen() {
   const prevSpokenStepRef = useRef<number | null>(null);
   const startExerciseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── 陀螺仪 ──────────────────────────────────────────────────────────────────
-  const [liveAngles, setLiveAngles] = useState({ pitch: 0, yaw: 0, roll: 0 });
-  // AirPods 连接状态（从我的页面的设置同步，这里仅作展示）
-  const [airpodsConnected] = useState(false);
-  const gyroAccum = useRef({ pitch: 0, yaw: 0, roll: 0, maxPitch: 0, maxYaw: 0, maxRoll: 0 });
+  // ── AirPods 头动传感器 ─────────────────────────────────────────────────────
+  const {
+    available: airpodsConnected,
+    liveAngles,
+    maxAnglesRef,
+    reset: resetHeadphoneMotion,
+  } = useHeadphoneMotion(isStarted && !isPaused);
 
   // ── 语音 & 音效 ──────────────────────────────────────────────────────────────
   const { speakExercise, speakStart, speakComplete, speakPause, tickBeep, resetBeep, stopSpeech } =
@@ -75,29 +72,6 @@ export default function ExerciseGuideScreen() {
   }));
 
   const currentExercise = course?.exercises[stepIdx];
-
-  // ── 陀螺仪订阅 ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!Gyroscope || Platform.OS === "web") return;
-    Gyroscope.setUpdateInterval(100);
-    const sub = Gyroscope.addListener((data: { x: number; y: number; z: number }) => {
-      const dt = 0.1;
-      const pitchDelta = data.x * dt * (180 / Math.PI);
-      const yawDelta   = data.z * dt * (180 / Math.PI);
-      const rollDelta  = data.y * dt * (180 / Math.PI);
-      gyroAccum.current.pitch += pitchDelta;
-      gyroAccum.current.yaw   += yawDelta;
-      gyroAccum.current.roll  += rollDelta;
-      const absPitch = Math.abs(gyroAccum.current.pitch);
-      const absYaw   = Math.abs(gyroAccum.current.yaw);
-      const absRoll  = Math.abs(gyroAccum.current.roll);
-      gyroAccum.current.maxPitch = Math.max(gyroAccum.current.maxPitch, absPitch);
-      gyroAccum.current.maxYaw   = Math.max(gyroAccum.current.maxYaw, absYaw);
-      gyroAccum.current.maxRoll  = Math.max(gyroAccum.current.maxRoll, absRoll);
-      setLiveAngles({ pitch: pitchDelta, yaw: yawDelta, roll: rollDelta });
-    });
-    return () => sub.remove();
-  }, []);
 
   // ── 当前步骤倒计时初始化 ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -171,6 +145,7 @@ export default function ExerciseGuideScreen() {
     wallStartRef.current = Date.now();
     accumulatedRef.current = 0;
     repCountRef.current = 0;
+    resetHeadphoneMotion();
     prevSpokenStepRef.current = stepIdx;
     setIsStarted(true);
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -257,7 +232,7 @@ export default function ExerciseGuideScreen() {
 
     const startTime = new Date(Date.now() - totalMs);
     const endTime   = new Date();
-    const g = gyroAccum.current;
+    const g = maxAnglesRef.current;
     const motion: MotionData = {
       pitchRange: Math.round(g.maxPitch),
       yawRange:   Math.round(g.maxYaw),
@@ -435,17 +410,17 @@ export default function ExerciseGuideScreen() {
         </View>
       </View>
 
-      {/* ── Gyroscope Panel ── */}
+      {/* ── AirPods Motion Panel ── */}
       <View style={[styles.gyroPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.gyroHeader}>
           <Text style={styles.gyroIcon}>📡</Text>
           <Text style={[styles.gyroTitle, { color: colors.foreground }]}>
-            头部运动数据
+            AirPods 头部运动数据
           </Text>
           {!airpodsConnected && (
             <View style={[styles.gyroNotice, { backgroundColor: colors.warning + "20" }]}>
               <Text style={[styles.gyroNoticeText, { color: colors.warning }]}>
-                连接 AirPods 以记录头部运动
+                连接支持头动的 AirPods 后记录
               </Text>
             </View>
           )}

@@ -8,6 +8,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useColors } from "@/hooks/use-colors";
 import { WorkoutStore } from "@/lib/store/workout-store";
 import { ScreenContainer } from "@/components/screen-container";
+import { useHeadphoneMotion } from "@/hooks/use-headphone-motion";
 import {
   ALL_TITLES, getUnlockedTitles, getCurrentTitle, getNextTitle,
   buildTitleStats, type Title,
@@ -36,7 +37,7 @@ export default function ProfileScreen() {
   const bottomPad = Math.max(insets.bottom, 16) + 72;
 
   const [nickname] = useState("天天肩颈用户");
-  const [airpodsEnabled, setAirpodsEnabled] = useState(false);
+  const { available: airpodsEnabled } = useHeadphoneMotion(true);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [stats, setStats] = useState({ totalDays: 0, totalSeconds: 0, totalSessions: 0 });
   const [titleStats, setTitleStats] = useState(() =>
@@ -72,7 +73,8 @@ export default function ProfileScreen() {
     label: string,
     value: boolean,
     onToggle: (v: boolean) => void,
-    desc?: string
+    desc?: string,
+    disabled = false,
   ) => (
     <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
       <View style={styles.settingLeft}>
@@ -85,6 +87,7 @@ export default function ProfileScreen() {
       <Switch
         value={value}
         onValueChange={onToggle}
+        disabled={disabled}
         trackColor={{ false: colors.border, true: colors.primary + "80" }}
         thumbColor={value ? colors.primary : colors.muted}
       />
@@ -200,7 +203,7 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={airpodsEnabled}
-                onValueChange={setAirpodsEnabled}
+                disabled
                 trackColor={{ false: colors.border, true: colors.primary + "80" }}
                 thumbColor={airpodsEnabled ? colors.primary : colors.muted}
               />
@@ -223,7 +226,7 @@ export default function ProfileScreen() {
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>设置</Text>
           <View style={[styles.settingsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {settingRow("🔔", "每日锻炼提醒", notifyEnabled, setNotifyEnabled, "每天提醒你进行颈椎锻炼")}
-            {settingRow("🎧", "AirPods 运动追踪", airpodsEnabled, setAirpodsEnabled, "使用 AirPods 陀螺仪记录头部运动")}
+            {settingRow("🎧", "AirPods 运动追踪", airpodsEnabled, () => {}, "根据耳机连接状态自动切换", true)}
           </View>
         </View>
 
