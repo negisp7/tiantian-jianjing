@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, Switch,
+  View, Text, Pressable, ScrollView, StyleSheet, Switch, Modal, TextInput,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/use-colors";
@@ -29,6 +31,8 @@ const TIER_LABEL: Record<Title["tier"], string> = {
   platinum: "铂金",
   special: "特殊",
 };
+const NICKNAME_KEY = "@neckcare_nickname";
+const DEFAULT_NICKNAME = "天天肩颈用户";
 
 const TIER_GRADIENT: Record<Title["tier"], [string, string]> = {
   bronze: ["#CD7F32", "#A0522D"],
@@ -44,7 +48,9 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 16) + 72;
 
-  const [nickname] = useState("天天肩颈用户");
+  const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
+  const [nicknameDraft, setNicknameDraft] = useState(DEFAULT_NICKNAME);
+  const [isEditingNickname, setIsEditingNickname] = useState(false);
   const { available: airpodsEnabled } = useHeadphoneMotion(true);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [stats, setStats] = useState({ totalDays: 0, totalSeconds: 0, totalSessions: 0 });
@@ -53,7 +59,8 @@ export default function ProfileScreen() {
   );
 
   const loadData = useCallback(async () => {
-    const [s, totalReps, maxAngle, streakInfo, timeSlots, diffCounts] = await Promise.all([
+    const [savedNickname, s, totalReps, maxAngle, streakInfo, timeSlots, diffCounts] = await Promise.all([
+      AsyncStorage.getItem(NICKNAME_KEY),
       WorkoutStore.getTotalStats(),
       WorkoutStore.getTotalReps(),
       WorkoutStore.getMaxAngle(),
@@ -61,6 +68,9 @@ export default function ProfileScreen() {
       WorkoutStore.getTimeSlotCounts(),
       WorkoutStore.getDifficultyCounts(),
     ]);
+    const nextNickname = savedNickname?.trim() || DEFAULT_NICKNAME;
+    setNickname(nextNickname);
+    setNicknameDraft(nextNickname);
     setStats(s);
     setTitleStats(buildTitleStats(
       s, totalReps, maxAngle,
@@ -70,11 +80,28 @@ export default function ProfileScreen() {
     ));
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData]),
+  );
 
   const unlockedTitles = getUnlockedTitles(titleStats);
   const currentTitle = getCurrentTitle(titleStats);
   const nextTitle = getNextTitle(titleStats);
+
+  const openNicknameEditor = () => {
+    setNicknameDraft(nickname);
+    setIsEditingNickname(true);
+  };
+
+  const saveNickname = async () => {
+    const nextNickname = nicknameDraft.trim() || DEFAULT_NICKNAME;
+    setNickname(nextNickname);
+    setNicknameDraft(nextNickname);
+    setIsEditingNickname(false);
+    await AsyncStorage.setItem(NICKNAME_KEY, nextNickname);
+  };
 
   const settingRow = (
     icon: string,
@@ -125,9 +152,12 @@ export default function ProfileScreen() {
               <Text style={styles.avatarEmoji}>{currentTitle.emoji}</Text>
             </View>
           </View>
-
-          <Text style={styles.nicknameText}>{nickname}</Text>
-
+          <Pressable
+            onPress={openNicknameEditor}
+            style={({ pressed }) => [styles.nicknameButton, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={styles.nicknameText}>{nickname}</Text>
+          </Pressable>
           {/* 当前称号 */}
           <LinearGradient
             colors={TIER_GRADIENT[currentTitle.tier]}
@@ -313,6 +343,48 @@ export default function ProfileScreen() {
 
         </View>
       </ScrollView>
+
+      <Modal
+        visible={isEditingNickname}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsEditingNickname(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.nicknameModal, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>修改昵称</Text>
+            <TextInput
+              value={nicknameDraft}
+              onChangeText={setNicknameDraft}
+              autoFocus
+              maxLength={16}
+              placeholder="输入昵称"
+              placeholderTextColor={colors.muted}
+              returnKeyType="done"
+              onSubmitEditing={saveNickname}
+              style={[styles.nicknameInput, {
+                color: colors.foreground,
+                borderColor: colors.border,
+                backgroundColor: colors.background,
+              }]}
+            />
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setIsEditingNickname(false)}
+                style={({ pressed }) => [styles.modalBtn, { backgroundColor: colors.background }, pressed && { opacity: 0.75 }]}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.muted }]}>取消</Text>
+              </Pressable>
+              <Pressable
+                onPress={saveNickname}
+                style={({ pressed }) => [styles.modalBtn, { backgroundColor: colors.primary }, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={styles.modalSaveText}>保存</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -352,7 +424,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarEmoji: { fontSize: 40 },
-  nicknameText: { fontSize: 20, fontWeight: "800", color: "#fff", marginBottom: 10 },
+  nicknameButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    minHeight: 30,
+    paddingHorizontal: 12,
+  },
+  nicknameText: { fontSize: 20, fontWeight: "800", color: "#fff" },
   currentTitleBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -503,4 +582,39 @@ const styles = StyleSheet.create({
   },
   disclaimerIcon: { fontSize: 16 },
   disclaimerText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  nicknameModal: {
+    width: "100%",
+    borderRadius: 18,
+    padding: 18,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 14 },
+  nicknameInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  modalBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    borderRadius: 12,
+  },
+  modalCancelText: { fontSize: 15, fontWeight: "700" },
+  modalSaveText: { fontSize: 15, fontWeight: "800", color: "#fff" },
 });

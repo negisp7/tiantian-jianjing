@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View, Text, Pressable, ScrollView, FlatList, StyleSheet,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
@@ -54,8 +55,12 @@ export default function CalendarScreen() {
     setSelectedRecords(records);
   }, [selectedDate]);
 
-  useEffect(() => { loadMonth(); }, [loadMonth]);
-  useEffect(() => { loadSelected(); }, [loadSelected]);
+  useFocusEffect(
+    useCallback(() => {
+      loadMonth();
+      loadSelected();
+    }, [loadMonth, loadSelected]),
+  );
 
   const handlePrevMonth = () => {
     if (viewMonth === 0) { setViewYear((y) => y - 1); setViewMonth(11); }
