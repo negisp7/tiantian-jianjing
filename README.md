@@ -912,3 +912,7 @@ export default config;
   "packageManager": "pnpm@9.12.0"
 }
 ```
+
+## 更新记录
+
+- **v1.1.0**（2026-05-25）：UI 全面美化，珊瑚粉+薄荷绿+紫罗兰配色；AirPods 头部追踪原生模块；Edge TTS 高质量语音引导；可编辑昵称；每日贴士卡片。
