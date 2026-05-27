@@ -170,6 +170,38 @@ export default function HomeScreen() {
             </View>
           </View>
 
+          {/* ── Supervision Mode ── */}
+          <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+            <Pressable
+              onPress={() => router.push("/supervision" as never)}
+              style={({ pressed }) => [
+                styles.supervisionCard,
+                { shadowColor: "#FF6B8A" },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+              ]}
+            >
+              <LinearGradient
+                colors={["#FFF0F3", "#FFE8ED", "#F4F0FF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.supervisionGradient}
+              >
+                <View style={styles.supervisionIconWrap}>
+                  <Text style={styles.supervisionIcon}>🎧</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.supervisionTitle}>低头监督模式</Text>
+                  <Text style={styles.supervisionDesc} numberOfLines={2}>
+                    佩戴支持头动的 AirPods，记录今日低头时间
+                  </Text>
+                </View>
+                <View style={styles.supervisionButton}>
+                  <Text style={styles.supervisionButtonText}>开启</Text>
+                </View>
+              </LinearGradient>
+            </Pressable>
+          </View>
+
           {/* ── Daily Tip Card ── */}
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
             <View style={styles.sectionRow}>
@@ -343,6 +375,42 @@ const styles = StyleSheet.create({
   weekStatNum: { fontSize: 20, fontWeight: "800" },
   weekStatLabel: { fontSize: 11 },
   weekStatDivider: { width: 1, height: 36, alignSelf: "center" },
+  // Supervision
+  supervisionCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  supervisionGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#FFD6DF",
+  },
+  supervisionIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,107,138,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  supervisionIcon: { fontSize: 28 },
+  supervisionTitle: { fontSize: 16, fontWeight: "800", color: "#2D1B24", marginBottom: 4 },
+  supervisionDesc: { fontSize: 12, lineHeight: 18, color: "#7A5060" },
+  supervisionButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
+    backgroundColor: "#FF6B8A",
+  },
+  supervisionButtonText: { color: "#fff", fontSize: 13, fontWeight: "800" },
   // Tip card
   tipCard: {
     borderRadius: 20,
