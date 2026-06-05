@@ -7,6 +7,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { WorkoutStore } from "@/lib/store/workout-store";
+import { PostureDailyRecord, PostureStore } from "@/lib/store/posture-store";
 import { WorkoutRecord } from "@/lib/types";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
@@ -24,6 +25,11 @@ function getFirstDayOfMonth(year: number, month: number) {
 function toDateStr(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
+function formatDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${minutes}:${String(rest).padStart(2, "0")}`;
+}
 
 export default function CalendarScreen() {
   const colors = useColors();
@@ -35,15 +41,19 @@ export default function CalendarScreen() {
     toDateStr(today.getFullYear(), today.getMonth(), today.getDate())
   );
   const [workoutDates, setWorkoutDates] = useState<Set<string>>(new Set());
+  const [postureDates, setPostureDates] = useState<Set<string>>(new Set());
   const [selectedRecords, setSelectedRecords] = useState<WorkoutRecord[]>([]);
+  const [selectedPosture, setSelectedPosture] = useState<PostureDailyRecord | null>(null);
   const [monthStats, setMonthStats] = useState({ days: 0, totalSeconds: 0, totalReps: 0 });
 
   const loadMonth = useCallback(async () => {
-    const [dates, records] = await Promise.all([
+    const [dates, postureDays, records] = await Promise.all([
       WorkoutStore.getDatesWithWorkouts(),
+      PostureStore.getDatesWithPosture(),
       WorkoutStore.getByMonth(viewYear, viewMonth + 1),
     ]);
     setWorkoutDates(dates);
+    setPostureDates(postureDays);
     const days = new Set(records.map((r) => r.startTime.slice(0, 10))).size;
     const totalSeconds = records.reduce((s, r) => s + r.durationSeconds, 0);
     const totalReps = records.reduce((s, r) => s + (r.completedExercises ?? 0), 0);
@@ -51,8 +61,12 @@ export default function CalendarScreen() {
   }, [viewYear, viewMonth]);
 
   const loadSelected = useCallback(async () => {
-    const records = await WorkoutStore.getByDate(selectedDate);
+    const [records, posture] = await Promise.all([
+      WorkoutStore.getByDate(selectedDate),
+      PostureStore.getByDate(selectedDate),
+    ]);
     setSelectedRecords(records);
+    setSelectedPosture(posture);
   }, [selectedDate]);
 
   useFocusEffect(
@@ -148,6 +162,7 @@ export default function CalendarScreen() {
                   if (!day) return <View key={col} style={styles.calCell} />;
                   const dateStr = toDateStr(viewYear, viewMonth, day);
                   const hasWorkout = workoutDates.has(dateStr);
+                  const hasPosture = postureDates.has(dateStr);
                   const isToday = dateStr === todayStr;
                   const isSelected = dateStr === selectedDate;
                   return (
@@ -166,11 +181,21 @@ export default function CalendarScreen() {
                       ]}>
                         {day}
                       </Text>
-                      {hasWorkout && (
-                        <View style={[
-                          styles.dot,
-                          { backgroundColor: isSelected ? "#fff" : colors.success },
-                        ]} />
+                      {(hasWorkout || hasPosture) && (
+                        <View style={styles.dotRow}>
+                          {hasWorkout && (
+                            <View style={[
+                              styles.dot,
+                              { backgroundColor: isSelected ? "#fff" : colors.success },
+                            ]} />
+                          )}
+                          {hasPosture && (
+                            <View style={[
+                              styles.dot,
+                              { backgroundColor: isSelected ? "#fff" : "#FF6B8A" },
+                            ]} />
+                          )}
+                        </View>
                       )}
                     </Pressable>
                   );
@@ -183,13 +208,46 @@ export default function CalendarScreen() {
         {/* ── Selected Day Records ── */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            {selectedDate === todayStr ? "今日锻炼" : `${selectedDate.slice(5).replace("-", "月")}日`}
+            {selectedDate === todayStr ? "今日记录" : `${selectedDate.slice(5).replace("-", "月")}日记录`}
           </Text>
-          {selectedRecords.length === 0 ? (
+          {selectedPosture && selectedPosture.monitorSeconds > 0 && (
+            <View style={[styles.postureCard, { backgroundColor: colors.surface, borderColor: "#FFD6DF" }]}>
+              <View style={styles.recordTop}>
+                <View style={styles.postureBadge}>
+                  <Text style={styles.postureBadgeText}>监督模式</Text>
+                </View>
+                <Text style={[styles.recordTime, { color: colors.muted }]}>AirPods 头部监督</Text>
+              </View>
+              <Text style={[styles.recordTitle, { color: colors.foreground }]}>低头监督记录</Text>
+              <View style={styles.postureStatsRow}>
+                <View style={styles.postureStatItem}>
+                  <Text style={[styles.postureStatValue, { color: colors.primary }]}>
+                    {formatDuration(selectedPosture.monitorSeconds)}
+                  </Text>
+                  <Text style={[styles.postureStatLabel, { color: colors.muted }]}>监督总时长</Text>
+                </View>
+                <View style={[styles.postureDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.postureStatItem}>
+                  <Text style={[styles.postureStatValue, { color: "#FF6B8A" }]}>
+                    {formatDuration(selectedPosture.lowHeadSeconds)}
+                  </Text>
+                  <Text style={[styles.postureStatLabel, { color: colors.muted }]}>低头时间</Text>
+                </View>
+                <View style={[styles.postureDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.postureStatItem}>
+                  <Text style={[styles.postureStatValue, { color: "#A78BFA" }]}>
+                    {selectedPosture.alertCount}
+                  </Text>
+                  <Text style={[styles.postureStatLabel, { color: colors.muted }]}>提醒次数</Text>
+                </View>
+              </View>
+            </View>
+          )}
+          {selectedRecords.length === 0 && (!selectedPosture || selectedPosture.monitorSeconds === 0) ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={styles.emptyIcon}>🏃</Text>
               <Text style={[styles.emptyText, { color: colors.muted }]}>
-                {selectedDate === todayStr ? "今天还没有锻炼记录，快去开始吧！" : "这天没有锻炼记录"}
+                {selectedDate === todayStr ? "今天还没有记录，快去开始吧！" : "这天没有记录"}
               </Text>
             </View>
           ) : (
@@ -286,6 +344,7 @@ const styles = StyleSheet.create({
     margin: 1,
   },
   calDayText: { fontSize: 14, fontWeight: "500" },
+  dotRow: { flexDirection: "row", gap: 3, marginTop: 2 },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
   emptyCard: {
@@ -310,6 +369,25 @@ const styles = StyleSheet.create({
   recordTitle: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
   recordMeta: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
   recordMetaText: { fontSize: 12 },
+  postureCard: {
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  postureBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: "#FFE8ED" },
+  postureBadgeText: { fontSize: 11, fontWeight: "700", color: "#FF6B8A" },
+  postureStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    backgroundColor: "#FFF7F9",
+    paddingVertical: 12,
+  },
+  postureStatItem: { flex: 1, alignItems: "center", gap: 3 },
+  postureStatValue: { fontSize: 18, fontWeight: "900" },
+  postureStatLabel: { fontSize: 11 },
+  postureDivider: { width: 1, height: 32 },
   repsRow: {
     flexDirection: "row",
     alignItems: "center",

@@ -2,10 +2,10 @@ import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import {
@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+import { reportAppLaunch } from "@/lib/analytics/report";
 
 const DISCLAIMER_KEY = "neckcare_disclaimer_accepted";
 
@@ -40,6 +41,27 @@ function DisclaimerGuard() {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
+
+function AppLaunchReporter() {
+  const lastAppStateRef = useRef(AppState.currentState);
+
+  useEffect(() => {
+    reportAppLaunch("cold");
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const previousState = lastAppStateRef.current;
+      lastAppStateRef.current = nextState;
+
+      if (nextState === "active" && previousState !== "active") {
+        reportAppLaunch("hot");
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   return null;
@@ -111,10 +133,12 @@ export default function RootLayout() {
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
+          <AppLaunchReporter />
           <DisclaimerGuard />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="disclaimer" />
+            <Stack.Screen name="supervision" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
           <StatusBar style="auto" />

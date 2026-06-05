@@ -445,11 +445,16 @@ export default function ExerciseGuideScreen() {
               <View style={[styles.gyroBar, { backgroundColor: colors.border }]}>
                 <View style={[
                   styles.gyroBarFill,
-                  { backgroundColor: m.color, width: `${Math.min(100, Math.abs(m.value) * 5)}%` as any },
+                  { backgroundColor: m.color, width: `${Math.min(100, Math.abs(m.value) / 90 * 100)}%` as any },
                 ]} />
               </View>
               <Text style={[styles.gyroMetricLabel, { color: colors.muted }]}>{m.label}</Text>
-              <Text style={[styles.gyroMetricVal, { color: m.color }]}>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+                style={[styles.gyroMetricVal, { color: m.color }]}
+              >
                 {m.value.toFixed(1)}°
               </Text>
             </View>
@@ -613,10 +618,17 @@ const styles = StyleSheet.create({
   gyroTitle: { fontSize: 12, fontWeight: "600" },
   gyroMetrics: { gap: 6 },
   gyroMetricItem: { flexDirection: "row", alignItems: "center", gap: 8 },
-  gyroBar: { flex: 1, height: 5, borderRadius: 3, overflow: "hidden" },
+  gyroBar: { flex: 1, minWidth: 0, height: 5, borderRadius: 3, overflow: "hidden" },
   gyroBarFill: { height: 5, borderRadius: 3 },
-  gyroMetricLabel: { fontSize: 11, width: 28 },
-  gyroMetricVal: { fontSize: 12, fontWeight: "600", width: 40, textAlign: "right" },
+  gyroMetricLabel: { fontSize: 11, width: 28, flexShrink: 0 },
+  gyroMetricVal: {
+    fontSize: 12,
+    fontWeight: "600",
+    width: 56,
+    flexShrink: 0,
+    textAlign: "right",
+    includeFontPadding: false,
+  },
   controls: {
     paddingHorizontal: 24,
     paddingVertical: 12,

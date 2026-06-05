@@ -18,6 +18,8 @@ const nativeModule = NativeModules.HeadphoneMotion as HeadphoneMotionModule | un
 
 export function useHeadphoneMotion(enabled: boolean) {
   const [available, setAvailable] = useState(false);
+  const [supported, setSupported] = useState(false);
+  const [worn, setWorn] = useState(false);
   const [liveAngles, setLiveAngles] = useState<HeadphoneMotionSample>({
     pitch: 0,
     yaw: 0,
@@ -28,11 +30,22 @@ export function useHeadphoneMotion(enabled: boolean) {
   useEffect(() => {
     if (!enabled || Platform.OS !== "ios" || !nativeModule) {
       setAvailable(false);
+      setSupported(false);
+      setWorn(false);
       setLiveAngles({ pitch: 0, yaw: 0, roll: 0 });
       return;
     }
 
     let mounted = true;
+    let currentSupported = false;
+    let currentWorn = false;
+    const syncAvailable = () => {
+      if (!mounted) return;
+      setSupported(currentSupported);
+      setWorn(currentWorn);
+      setAvailable(currentSupported && currentWorn);
+    };
+
     const emitter = new NativeEventEmitter(nativeModule as any);
     const motionSub = emitter.addListener("HeadphoneMotionUpdate", (sample: HeadphoneMotionSample) => {
       if (!mounted) return;
@@ -44,19 +57,23 @@ export function useHeadphoneMotion(enabled: boolean) {
     const availabilitySub = emitter.addListener(
       "HeadphoneMotionAvailabilityChanged",
       (event: { available: boolean }) => {
-        if (mounted && !event.available) setAvailable(false);
+        currentSupported = Boolean(event.available);
+        syncAvailable();
       },
     );
     const wearSub = emitter.addListener(
       "HeadphoneWearStateChanged",
       (event: { worn: boolean }) => {
-        if (mounted) setAvailable(Boolean(event.worn));
+        currentWorn = Boolean(event.worn);
+        syncAvailable();
       },
     );
 
     Promise.all([nativeModule.isAvailable(), nativeModule.isWorn()])
       .then(([isAvailable, isWorn]) => {
-        if (mounted) setAvailable(Boolean(isAvailable && isWorn));
+        currentSupported = Boolean(isAvailable);
+        currentWorn = Boolean(isWorn);
+        syncAvailable();
         if (isAvailable) nativeModule.startUpdates();
       })
       .catch(() => {
@@ -69,6 +86,8 @@ export function useHeadphoneMotion(enabled: boolean) {
       availabilitySub.remove();
       wearSub.remove();
       nativeModule.stopUpdates();
+      setSupported(false);
+      setWorn(false);
       setLiveAngles({ pitch: 0, yaw: 0, roll: 0 });
     };
   }, [enabled]);
@@ -80,6 +99,8 @@ export function useHeadphoneMotion(enabled: boolean) {
 
   return {
     available,
+    supported,
+    worn,
     liveAngles,
     maxAnglesRef,
     reset,

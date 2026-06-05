@@ -51,7 +51,11 @@ export default function ProfileScreen() {
   const [nickname, setNickname] = useState(DEFAULT_NICKNAME);
   const [nicknameDraft, setNicknameDraft] = useState(DEFAULT_NICKNAME);
   const [isEditingNickname, setIsEditingNickname] = useState(false);
-  const { available: airpodsEnabled } = useHeadphoneMotion(true);
+  const {
+    available: airpodsEnabled,
+    supported: airpodsMotionSupported,
+    worn: headphonesWorn,
+  } = useHeadphoneMotion(true);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [stats, setStats] = useState({ totalDays: 0, totalSeconds: 0, totalSessions: 0 });
   const [titleStats, setTitleStats] = useState(() =>
@@ -205,7 +209,7 @@ export default function ProfileScreen() {
           {/* ── 称号系统 ── */}
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
             <View style={styles.sectionRow}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={styles.titleSectionHeading}>
                 <Text style={styles.sectionEmoji}>🏆</Text>
                 <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
                   称号收集 {unlockedTitles.length}/{ALL_TITLES.length}
@@ -268,12 +272,18 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.airpodsTitle, { color: colors.foreground }]}>
-                    {airpodsEnabled ? "AirPods 佩戴中" : "未检测到佩戴状态"}
+                    {airpodsEnabled
+                      ? "AirPods 运动传感器已启用"
+                      : airpodsMotionSupported
+                        ? "请佩戴支持头动的 AirPods"
+                        : headphonesWorn
+                          ? "当前耳机不支持头动传感器"
+                          : "未检测到支持头动的 AirPods"}
                   </Text>
                   <Text style={[styles.airpodsDesc, { color: colors.muted }]}>
                     {airpodsEnabled
                       ? "将使用 AirPods 头动传感器记录精准头部运动数据"
-                      : "戴上支持头动的 AirPods 以获得精准运动追踪"}
+                      : "仅支持带头部运动传感器的苹果耳机，普通蓝牙耳机不会启用运动追踪"}
                   </Text>
                 </View>
                 <Switch
@@ -304,7 +314,7 @@ export default function ProfileScreen() {
             </View>
             <View style={[styles.settingsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               {settingRow("🔔", "每日锻炼提醒", notifyEnabled, setNotifyEnabled, "每天提醒你进行颈椎锻炼")}
-              {settingRow("🎧", "AirPods 运动追踪", airpodsEnabled, () => {}, "根据耳机佩戴状态自动切换", true)}
+              {settingRow("🎧", "AirPods 运动追踪", airpodsEnabled, () => {}, "根据支持头动的 AirPods 佩戴状态自动切换", true)}
             </View>
           </View>
 
@@ -320,7 +330,7 @@ export default function ProfileScreen() {
                 ["课程数量", "6 套课程"],
                 ["健康贴士", "60 条"],
                 ["称号数量", `${ALL_TITLES.length} 个`],
-                ["传感器支持", "陀螺仪 + AirPods"],
+                ["传感器支持", "AirPods 头动传感器"],
               ].map(([label, value], idx, arr) => (
                 <View key={label}>
                   <View style={styles.aboutRow}>
@@ -452,9 +462,17 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   sectionRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  titleSectionHeading: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 10,
+  },
   sectionEmoji: { fontSize: 18, marginRight: 6 },
   sectionTitle: { fontSize: 17, fontWeight: "700", flex: 1 },
   seeAllBtn: {
+    flexShrink: 0,
     backgroundColor: "#FFE8ED",
     paddingHorizontal: 12,
     paddingVertical: 5,

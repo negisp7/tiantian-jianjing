@@ -41,7 +41,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.0",
+  version: "1.1.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -50,10 +50,13 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-    buildNumber: "4",
-    "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+    buildNumber: "16",
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+      NSMotionUsageDescription:
+        "用于读取 AirPods 头部运动数据，在锻炼时显示俯仰、偏航、横滚角度，并生成活动度分析报告。",
+      UIBackgroundModes: ["audio"],
+    },
   },
   android: {
     adaptiveIcon: {
