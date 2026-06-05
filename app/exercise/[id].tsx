@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  View, Text, Pressable, StyleSheet, Dimensions, Platform,
+  View, Text, Pressable, StyleSheet, Dimensions, Platform, Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
@@ -21,9 +21,15 @@ import { useHeadphoneMotion } from "@/hooks/use-headphone-motion";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const MOTION_ICONS: Record<string, string> = {
-  forward: "⬇️", backward: "⬆️", left: "⬅️", right: "➡️",
-  "rotate-cw": "🔄", "rotate-ccw": "🔃", shoulder: "🙆", static: "🧘",
+const MOTION_IMAGES: Record<string, ReturnType<typeof require>> = {
+  forward:     require("@/assets/images/exercises/motion_forward.png"),
+  backward:    require("@/assets/images/exercises/motion_backward.png"),
+  left:        require("@/assets/images/exercises/motion_left.png"),
+  right:       require("@/assets/images/exercises/motion_right.png"),
+  "rotate-cw":  require("@/assets/images/exercises/motion_left.png"),
+  "rotate-ccw": require("@/assets/images/exercises/motion_right.png"),
+  shoulder:    require("@/assets/images/exercises/motion_shoulder.png"),
+  static:      require("@/assets/images/exercises/motion_static.png"),
 };
 
 const MIN_VALID_SECONDS = 30;
@@ -356,9 +362,13 @@ export default function ExerciseGuideScreen() {
 
       {/* ── Main Content ── */}
       <View style={styles.mainContent}>
-        {/* Motion Icon */}
-        <View style={[styles.motionIconContainer, { backgroundColor: colors.primary + "15" }]}>
-          <Text style={styles.motionIcon}>{MOTION_ICONS[currentExercise.motionType] ?? "🔵"}</Text>
+        {/* Motion Image */}
+        <View style={styles.motionImageContainer}>
+          <Image
+            source={MOTION_IMAGES[currentExercise.motionType] ?? MOTION_IMAGES.forward}
+            style={styles.motionImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Exercise Name */}
@@ -555,12 +565,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 6,
   },
-  motionIconContainer: {
-    width: 80, height: 80, borderRadius: 40,
+  motionImageContainer: {
+    width: 200, height: 148,
     alignItems: "center", justifyContent: "center",
     marginBottom: 4,
+    borderRadius: 16,
+    overflow: "hidden",
   },
-  motionIcon: { fontSize: 40 },
+  motionImage: { width: 200, height: 148 },
   exerciseName: { fontSize: 22, fontWeight: "800", textAlign: "center" },
   exerciseGuide: { fontSize: 13, textAlign: "center", fontStyle: "italic" },
   exerciseDesc: { fontSize: 13, textAlign: "center", lineHeight: 19, maxWidth: 280 },
