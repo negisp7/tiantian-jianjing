@@ -16,10 +16,14 @@ const DIFFICULTY_LABEL: Record<string, string> = { light: "轻度", moderate: "�
 const DIFFICULTY_COLOR: Record<string, string> = { light: "#34C759", moderate: "#FF9500", intense: "#FF3B30" };
 const MOTION_ICONS: Record<string, string> = {
   forward: "⬇️", backward: "⬆️", left: "⬅️", right: "➡️",
+  "left-lat": "↙️", "right-lat": "↘️",
+  trapezius: "↔️",
   "rotate-cw": "🔄", "rotate-ccw": "🔃", shoulder: "🙆", static: "🧘",
 };
 const MOTION_LABELS: Record<string, string> = {
   forward: "前屈", backward: "后伸", left: "左侧", right: "右侧",
+  "left-lat": "左侧屈", "right-lat": "右侧屈",
+  trapezius: "斜方肌",
   "rotate-cw": "顺转", "rotate-ccw": "逆转", shoulder: "肩部", static: "静力",
 };
 

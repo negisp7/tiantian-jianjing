@@ -8,7 +8,18 @@ export interface Exercise {
   description: string;
   durationSeconds: number;
   /** Direction hint for the motion indicator */
-  motionType: 'forward' | 'backward' | 'left' | 'right' | 'rotate-cw' | 'rotate-ccw' | 'shoulder' | 'static';
+  motionType:
+    | 'forward'
+    | 'backward'
+    | 'left'
+    | 'right'
+    | 'left-lat'
+    | 'right-lat'
+    | 'trapezius'
+    | 'rotate-cw'
+    | 'rotate-ccw'
+    | 'shoulder'
+    | 'static';
   reps?: number;
 }
 

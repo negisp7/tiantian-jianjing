@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, Pressable, StyleSheet, Dimensions, Platform, Image,
 } from "react-native";
+import type { ImageSourcePropType } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
@@ -21,13 +22,19 @@ import { useHeadphoneMotion } from "@/hooks/use-headphone-motion";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const MOTION_IMAGES: Record<string, ReturnType<typeof require>> = {
+const MOTION_IMAGES: Record<string, ImageSourcePropType | ImageSourcePropType[]> = {
   forward:     require("@/assets/images/exercises/motion_forward.png"),
   backward:    require("@/assets/images/exercises/motion_backward.png"),
   left:        require("@/assets/images/exercises/motion_left.png"),
   right:       require("@/assets/images/exercises/motion_right.png"),
-  "rotate-cw":  require("@/assets/images/exercises/motion_left.png"),
-  "rotate-ccw": require("@/assets/images/exercises/motion_right.png"),
+  "left-lat":  require("@/assets/images/exercises/motion_left_lat.png"),
+  "right-lat": require("@/assets/images/exercises/motion_right_lat.png"),
+  trapezius: [
+    require("@/assets/images/exercises/motion_trapezius_stretch_left.png"),
+    require("@/assets/images/exercises/motion_trapezius_stretch_right.png"),
+  ],
+  "rotate-cw":  require("@/assets/images/exercises/motion_rotate_cw.png"),
+  "rotate-ccw": require("@/assets/images/exercises/motion_rotate_ccw.png"),
   shoulder:    require("@/assets/images/exercises/motion_shoulder.png"),
   static:      require("@/assets/images/exercises/motion_static.png"),
 };
@@ -78,6 +85,7 @@ export default function ExerciseGuideScreen() {
   }));
 
   const currentExercise = course?.exercises[stepIdx];
+  const currentMotionImage = currentExercise ? (MOTION_IMAGES[currentExercise.motionType] ?? MOTION_IMAGES.forward) : MOTION_IMAGES.forward;
 
   // ── 当前步骤倒计时初始化 ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -364,11 +372,24 @@ export default function ExerciseGuideScreen() {
       <View style={styles.mainContent}>
         {/* Motion Image */}
         <View style={styles.motionImageContainer}>
-          <Image
-            source={MOTION_IMAGES[currentExercise.motionType] ?? MOTION_IMAGES.forward}
-            style={styles.motionImage}
-            resizeMode="contain"
-          />
+          {Array.isArray(currentMotionImage) ? (
+            <View style={styles.motionImagePair}>
+              {currentMotionImage.map((source, index) => (
+                <Image
+                  key={index}
+                  source={source}
+                  style={styles.motionImageSmall}
+                  resizeMode="contain"
+                />
+              ))}
+            </View>
+          ) : (
+            <Image
+              source={currentMotionImage}
+              style={styles.motionImage}
+              resizeMode="contain"
+            />
+          )}
         </View>
 
         {/* Exercise Name */}
@@ -571,13 +592,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   motionImageContainer: {
-    width: 200, height: 148,
+    width: 220, height: 156,
     alignItems: "center", justifyContent: "center",
     marginBottom: 4,
     borderRadius: 16,
     overflow: "hidden",
   },
   motionImage: { width: 200, height: 148 },
+  motionImagePair: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  motionImageSmall: { width: 104, height: 148 },
   exerciseName: { fontSize: 22, fontWeight: "800", textAlign: "center" },
   exerciseGuide: { fontSize: 13, textAlign: "center", fontStyle: "italic" },
   exerciseDesc: { fontSize: 13, textAlign: "center", lineHeight: 19, maxWidth: 280 },

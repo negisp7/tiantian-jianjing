@@ -52,6 +52,8 @@ const DIFFICULTIES: {
 
 const MOTION_ICONS: Record<string, string> = {
   forward: "⬇️", backward: "⬆️", left: "⬅️", right: "➡️",
+  "left-lat": "↙️", "right-lat": "↘️",
+  trapezius: "↔️",
   "rotate-cw": "🔄", "rotate-ccw": "🔃", shoulder: "🙆", static: "🧘",
 };
 
