@@ -6,6 +6,12 @@ React Native mobile app with **Expo SDK 54**, **TypeScript**, and **React 19**.
 
 ---
 
+## 更新记录
+
+- 1.2.0：更新课程动作说明图，修正侧屈、顺逆时针环绕和斜方肌拉伸动作示意。
+
+---
+
 ## Quick Start
 
 1. **Edit the home screen** — `app/(tabs)/index.tsx` is your app's main entry point
